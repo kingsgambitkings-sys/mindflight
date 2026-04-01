@@ -32,7 +32,10 @@ document.addEventListener('DOMContentLoaded', () => {
   initKeyboardShortcuts();
   initShareButton();
   initPWA();
-  initBudgetSlider();
+  initScrollHint();
+  initHeadlineFade();
+  initDealsAutoLoad();
+  initAlertModal();
   loadWatchedRoutes();
   loadAlerts();
   loadPriceHistory();
@@ -48,6 +51,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('currencySelect')?.addEventListener('change', function() {
     localStorage.setItem('travel-currency', this.value);
   });
+
+  // Fix 17: Check URL params for auto-search
+  checkUrlParams();
 });
 
 // ===== THEME =====
@@ -269,7 +275,7 @@ function initGlobe() {
       .atmosphereColor(isDark ? '#00d4aa' : '#0d9488').atmosphereAltitude(0.2)
       .pointsData(AIRPORTS).pointLat(d => d.lat).pointLng(d => d.lon)
       .pointColor(() => '#00d4aa').pointAltitude(0.02).pointRadius(0.4)
-      .labelsData(AIRPORTS).labelLat(d => d.lat).labelLng(d => d.lon)
+      .labelsData(AIRPORTS.filter(a => ['HKG','NRT','SIN','BKK','LHR','CDG','JFK','LAX','DXB','SYD','ICN','FCO','BCN','AMS','SFO'].includes(a.code))).labelLat(d => d.lat).labelLng(d => d.lon)
       .labelText(d => d.city).labelSize(1.2).labelDotRadius(0.4)
       .labelColor(() => 'rgba(255,255,255,0.85)').labelResolution(2).labelAltitude(0.025)
       .arcsData(arcs).arcColor('color').arcDashLength(0.4).arcDashGap(0.2).arcDashAnimateTime(2000).arcStroke(0.3)
@@ -317,7 +323,7 @@ function spinAndThrowDart() {
   const btn = document.getElementById('spinDartBtn');
   btn.style.animation = 'pulse 1s ease-in-out infinite';
   if (globeInstance) {
-    globeInstance.controls().autoRotateSpeed = 75;
+    globeInstance.controls().autoRotateSpeed = 15;
     globeInstance.onGlobeClick(({ lat, lng }) => { if (dartMode) throwDartAt(lat, lng); });
   }
   showToast('Globe is spinning! Tap anywhere to throw your dart!', 'info');
@@ -371,12 +377,18 @@ async function showDiscoveryCard(dest, origin) {
   about.innerHTML = '<p style="color:var(--text-muted);">Loading...</p>';
   highlights.innerHTML = '';
   flight.innerHTML = '<div class="discovery-flight-loading">Checking prices...</div>';
-  setTimeout(() => section.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+
+  // Fix 14: load content first, then scroll smoothly after wiki + prices are ready
+  let wikiDone = false, priceDone = false;
+  function maybeScroll() {
+    if (wikiDone && priceDone) scrollToDiscoveryAfterLoad();
+  }
 
   fetchWikipediaInfo(cleanCity, dest.country).then(info => {
     about.innerHTML = info ? `<p>${info.description}</p>` : `<p>${dest.city} is a popular destination in ${dest.country}.</p>`;
     if (info?.highlights) highlights.innerHTML = info.highlights.map(h => `<span class="discovery-highlight">${h}</span>`).join('');
-  });
+    wikiDone = true; maybeScroll();
+  }).catch(() => { wikiDone = true; maybeScroll(); });
 
   // Extras
   const extrasDiv = document.getElementById('discoveryExtras');
@@ -415,7 +427,8 @@ async function showDiscoveryCard(dest, origin) {
       const lbl = gbp < 150 ? 'Great deal!' : gbp < 300 ? 'Fair price' : 'Above average';
       flight.innerHTML = `<div class="discovery-flight-price"><div><div class="discovery-flight-price-amount">${formatPrice(price, dc)}</div><div class="discovery-flight-price-label">From ${origin} · ${cheapest.airline || ''} · ${cheapest.stops || 0} stop${(cheapest.stops||0)!==1?'s':''}</div></div><span class="discovery-flight-deal ${cls}">${lbl}</span></div>`;
     } else { flight.innerHTML = '<div class="discovery-flight-loading">No flights found for this date.</div>'; }
-  } catch { flight.innerHTML = '<div class="discovery-flight-loading">Could not check prices.</div>'; }
+    priceDone = true; maybeScroll();
+  } catch { flight.innerHTML = '<div class="discovery-flight-loading">Could not check prices.</div>'; priceDone = true; maybeScroll(); }
 }
 
 async function fetchCityImage(city) {
@@ -533,7 +546,13 @@ async function searchFlightsUI() {
   const pax = document.getElementById('flightPax').value;
   const resultsDiv = document.getElementById('flightResults');
   if (!origin || !destination || !date) { showToast('Fill in origin, destination and date', 'warning'); return; }
-  resultsDiv.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">Searching...</div>';
+  // Fix 6: skeleton loading cards
+  resultsDiv.innerHTML = Array(4).fill('<div class="flight-result-card skeleton" style="height:80px;margin-bottom:8px;border-radius:12px;"></div>').join('');
+
+  // Fix 12: spinner on search button
+  const searchBtn = document.getElementById('searchFlightsBtn');
+  const searchBtnOrigHTML = searchBtn ? searchBtn.innerHTML : '';
+  if (searchBtn) { searchBtn.disabled = true; searchBtn.innerHTML = '<span class="spinner"></span><span>Searching...</span>'; }
 
   // Scroll to results
   document.getElementById('search-section')?.scrollIntoView({ behavior: 'smooth' });
@@ -556,6 +575,8 @@ async function searchFlightsUI() {
       document.getElementById('resultsToolbar').style.display = 'flex';
       document.getElementById('resultsCount').textContent = `${data.flights.length} flights · ${origin} → ${destination}`;
       renderFlightResults(data.flights);
+      // Fix 6: search summary banner
+      resultsDiv.insertAdjacentHTML('afterbegin', buildSearchSummary(origin, destination, date, pax));
       showToast(`${data.flights.length} flights found!`, 'success');
       loadPriceHistory();
       showDealRecommendation(data.flights, origin, destination);
@@ -563,11 +584,16 @@ async function searchFlightsUI() {
       loadFlexDateGrid(origin, destination, date);
       // Update price explorer route label
       document.getElementById('priceExplorerRoute').textContent = `${origin} → ${destination}`;
+      // Fix 17: push URL state
+      pushSearchState(origin, destination, date);
     } else {
       resultsDiv.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">No flights found. Try different dates.</div>';
     }
   } catch (err) {
     resultsDiv.innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger);">Search failed: ${err.message}</div>`;
+  } finally {
+    // Fix 12: restore search button
+    if (searchBtn) { searchBtn.disabled = false; searchBtn.innerHTML = searchBtnOrigHTML; }
   }
 }
 
@@ -732,17 +758,21 @@ async function loadWatchedRoutes() {
           </div>
         </div>`).join('');
     } else {
-      container.innerHTML = '<div class="empty-state"><p>Search for flights and click "Watch this route" to track prices.</p></div>';
+      container.innerHTML = '<div class="empty-state"><p>Search for flights and click "Watch this route" to track prices.</p><button class="btn-primary btn-sm" style="margin-top:12px;" onclick="document.getElementById(\'flightTo\').focus();document.getElementById(\'globe-section\').scrollIntoView({behavior:\'smooth\'});">Search a route to watch</button></div>';
     }
   } catch {}
 }
 
 // ===== ALERTS =====
 function promptAlert(origin, destination) {
-  const price = prompt(`Set target price for ${origin} → ${destination} (in ${getSelectedCurrency()}):`);
-  if (price && !isNaN(parseFloat(price))) {
-    createAlert(origin, destination, parseFloat(price), getSelectedCurrency());
-  }
+  _alertModalOrigin = origin;
+  _alertModalDest = destination;
+  const dc = getSelectedCurrency();
+  const routeLabel = document.getElementById('alertModalRoute');
+  if (routeLabel) routeLabel.textContent = origin + ' \u2192 ' + destination + ' (' + dc + ')';
+  document.getElementById('alertTargetPrice').value = '';
+  document.getElementById('alertModal')?.classList.add('open');
+  setTimeout(() => document.getElementById('alertTargetPrice')?.focus(), 100);
 }
 
 async function createAlert(origin, destination, targetPrice, currency) {
@@ -799,25 +829,29 @@ async function scanAllDestinations() {
   grid.innerHTML = dests.slice(0, 20).map(d => `<div class="cheapest-card loading" id="cheap-${d.code}"><div class="cheapest-card-dest"><span class="flag">${d.flag}</span> ${d.city}</div><div class="cheapest-card-route">${origin} → ${d.code}</div><div class="cheapest-card-price" style="color:var(--text-muted)">Searching...</div></div>`).join('');
   showToast(`Scanning destinations from ${origin}...`, 'info');
 
-  for (const dest of dests.slice(0, 20)) {
-    try {
-      const r = await fetch(`${API_BASE}/gateway/flights`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ origin, destination: dest.code, date, passengers:1 }) });
-      const data = await r.json();
-      const card = document.getElementById(`cheap-${dest.code}`);
-      if (!card) continue;
-      card.classList.remove('loading');
-      if (data.flights?.length) {
-        const cheapest = data.flights.reduce((m,f)=>parseFloat(f.total_amount)<parseFloat(m.total_amount)?f:m);
-        const price = convertPrice(parseFloat(cheapest.total_amount), cheapest.currency, dc);
-        const gbp = convertPrice(price, dc, 'GBP');
-        const cls = gbp<150?'great':gbp<300?'fair':'high';
-        card.innerHTML = `<div class="cheapest-card-deal ${cls}">${gbp<150?'Great deal':gbp<300?'Fair':'Pricey'}</div><div class="cheapest-card-dest"><span class="flag">${dest.flag}</span> ${dest.city}</div><div class="cheapest-card-route">${origin}→${dest.code}</div><div class="cheapest-card-price">${formatPrice(price,dc)}</div>`;
-        card.onclick = () => { setDestCode(dest.code); searchFlightsUI(); };
-      } else {
-        card.innerHTML = `<div class="cheapest-card-dest"><span class="flag">${dest.flag}</span> ${dest.city}</div><div class="cheapest-card-price" style="color:var(--text-muted);font-size:12px">No flights</div>`;
-      }
-    } catch { const card = document.getElementById(`cheap-${dest.code}`); if(card) { card.classList.remove('loading'); card.innerHTML=`<div class="cheapest-card-dest">${escapeHtml(dest.city)}</div><div class="cheapest-card-price" style="color:var(--text-muted)">Error</div>`; } }
-    await new Promise(r => setTimeout(r, 500));
+  // Fix 15: batch parallel requests (4 at a time)
+  const batch = dests.slice(0, 20);
+  for (let i = 0; i < batch.length; i += 4) {
+    const chunk = batch.slice(i, i + 4);
+    await Promise.allSettled(chunk.map(async (dest) => {
+      try {
+        const r = await fetch(`${API_BASE}/gateway/flights`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ origin, destination: dest.code, date, passengers:1 }) });
+        const data = await r.json();
+        const card = document.getElementById(`cheap-${dest.code}`);
+        if (!card) return;
+        card.classList.remove('loading');
+        if (data.flights?.length) {
+          const cheapest = data.flights.reduce((m,f)=>parseFloat(f.total_amount)<parseFloat(m.total_amount)?f:m);
+          const price = convertPrice(parseFloat(cheapest.total_amount), cheapest.currency, dc);
+          const gbp = convertPrice(price, dc, 'GBP');
+          const cls = gbp<150?'great':gbp<300?'fair':'high';
+          card.innerHTML = `<div class="cheapest-card-deal ${cls}">${gbp<150?'Great deal':gbp<300?'Fair':'Pricey'}</div><div class="cheapest-card-dest"><span class="flag">${dest.flag}</span> ${dest.city}</div><div class="cheapest-card-route">${origin}\u2192${dest.code}</div><div class="cheapest-card-price">${formatPrice(price,dc)}</div>`;
+          card.onclick = () => { setDestCode(dest.code); searchFlightsUI(); };
+        } else {
+          card.innerHTML = `<div class="cheapest-card-dest"><span class="flag">${dest.flag}</span> ${dest.city}</div><div class="cheapest-card-price" style="color:var(--text-muted);font-size:12px">No flights</div>`;
+        }
+      } catch { const card = document.getElementById(`cheap-${dest.code}`); if(card) { card.classList.remove('loading'); card.innerHTML=`<div class="cheapest-card-dest">${escapeHtml(dest.city)}</div><div class="cheapest-card-price" style="color:var(--text-muted)">Error</div>`; } }
+    }));
   }
 }
 
@@ -1117,7 +1151,7 @@ function renderTrips() {
   const trips = JSON.parse(localStorage.getItem('mindflight-trips') || '[]');
   const dc = getSelectedCurrency();
   if (!trips.length) {
-    container.innerHTML = `<div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p>No trips saved yet.</p><p class="text-muted-sm">Search for flights and save them here.</p></div>`;
+    container.innerHTML = `<div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p>No trips saved yet.</p><p class="text-muted-sm">Search for flights and save them here.</p><button class="btn-primary btn-sm" style="margin-top:12px;" onclick="document.getElementById('tripModal').classList.add('open');">Create your first trip</button></div>`;
     return;
   }
   container.innerHTML = trips.map((trip, i) => `
@@ -1303,19 +1337,6 @@ function initPWA() {
   });
 }
 
-// ===== BUDGET SLIDER =====
-function initBudgetSlider() {
-  const slider = document.getElementById('budgetSlider');
-  const display = document.getElementById('budgetDisplay');
-  if (!slider) return;
-
-  slider.addEventListener('input', () => {
-    const dc = getSelectedCurrency();
-    const val = parseInt(slider.value);
-    display.textContent = `${FX_SYMBOLS[dc] || dc}0 – ${formatPrice(val, dc)}`;
-  });
-}
-
 // ===== UTILS =====
 function escapeHtml(s) { if(!s) return ''; const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 
@@ -1351,5 +1372,112 @@ function setDestCode(code) {
       }];
       globeInstance.arcsData(arcs);
     }
+  }
+}
+
+// ===== FIX 1: SCROLL HINT — hide after scrolling past =====
+function initScrollHint() {
+  const hint = document.getElementById('scrollHint');
+  if (!hint) return;
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) hint.classList.add('hidden');
+    });
+  }, { threshold: 0 });
+  observer.observe(hint);
+}
+
+// ===== FIX 2: HEADLINE FADE on scroll =====
+function initHeadlineFade() {
+  const headline = document.getElementById('globeHeadline');
+  if (!headline) return;
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      headline.style.opacity = entry.isIntersecting ? '1' : '0';
+    });
+  }, { threshold: 0.1 });
+  const globeSection = document.getElementById('globe-section');
+  if (globeSection) observer.observe(globeSection);
+}
+
+// ===== FIX 3: AUTO-LOAD DEALS when section scrolls into view =====
+function initDealsAutoLoad() {
+  const section = document.getElementById('recommended-section');
+  const grid = document.getElementById('cheapestGrid');
+  if (!section || !grid) return;
+  // Show skeleton cards instead of placeholder text
+  const skeletonCount = 8;
+  grid.innerHTML = Array(skeletonCount).fill('<div class="cheapest-card skeleton" style="height:120px;border-radius:12px;"></div>').join('');
+  let hasFired = false;
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && !hasFired) {
+        hasFired = true;
+        scanAllDestinations();
+        observer.disconnect();
+      }
+    });
+  }, { threshold: 0.1 });
+  observer.observe(section);
+}
+
+// ===== FIX 6: SEARCH SUMMARY BANNER =====
+function buildSearchSummary(origin, destination, date, pax) {
+  const cabin = document.getElementById('cabinClass')?.value || 'economy';
+  const cabinLabel = cabin.charAt(0).toUpperCase() + cabin.slice(1).replace('_', ' ');
+  const fmtDate = date ? new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : date;
+  return '<div class="search-summary" style="padding:10px 14px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:12px;font-size:12px;font-weight:600;color:var(--text-secondary);display:flex;align-items:center;gap:6px;">' +
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+    '<span>' + escapeHtml(origin) + ' &rarr; ' + escapeHtml(destination) + ' &middot; ' + escapeHtml(fmtDate) + ' &middot; ' + escapeHtml(pax) + ' Pax &middot; ' + escapeHtml(cabinLabel) + '</span></div>';
+}
+
+// ===== FIX 11: ALERT MODAL =====
+let _alertModalOrigin = '';
+let _alertModalDest = '';
+function initAlertModal() {
+  const modal = document.getElementById('alertModal');
+  if (!modal) return;
+  document.getElementById('closeAlertModal')?.addEventListener('click', () => modal.classList.remove('open'));
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('open'); });
+  document.getElementById('alertSaveBtn')?.addEventListener('click', () => {
+    const price = parseFloat(document.getElementById('alertTargetPrice')?.value);
+    if (!price || isNaN(price)) { showToast('Enter a valid price', 'warning'); return; }
+    createAlert(_alertModalOrigin, _alertModalDest, price, getSelectedCurrency());
+    modal.classList.remove('open');
+    document.getElementById('alertTargetPrice').value = '';
+  });
+}
+
+// ===== FIX 14: DISCOVERY SECTION — smooth appearance =====
+function scrollToDiscoveryAfterLoad() {
+  const section = document.getElementById('discoverySection');
+  if (!section) return;
+  section.style.animation = 'fadeInUp 0.4s ease';
+  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ===== FIX 17: URL STATE FOR SEARCHES =====
+function pushSearchState(origin, destination, date) {
+  const url = new URL(window.location);
+  url.searchParams.set('from', origin);
+  url.searchParams.set('to', destination);
+  url.searchParams.set('date', date);
+  history.pushState({}, '', url);
+}
+
+function checkUrlParams() {
+  const params = new URLSearchParams(window.location.search);
+  const from = params.get('from');
+  const to = params.get('to');
+  const date = params.get('date');
+  if (from && to) {
+    const originHidden = document.getElementById('originSelect');
+    const originInput = document.getElementById('originInput');
+    if (originHidden) originHidden.value = from.toUpperCase();
+    const originAirport = AIRPORTS.find(a => a.code === from.toUpperCase());
+    if (originInput && originAirport) originInput.value = originAirport.city + ' (' + originAirport.code + ')';
+    setDestCode(to.toUpperCase());
+    if (date) document.getElementById('flightDate').value = date;
+    setTimeout(() => searchFlightsUI(), 500);
   }
 }

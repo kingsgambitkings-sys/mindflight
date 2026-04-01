@@ -30,19 +30,19 @@
       <nav class="topbar-nav" id="topbarNav">
         <a href="#globe-section" class="nav-pill active" data-section="globe-section">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
-          <span>Globe</span>
+          <span>Explore</span>
         </a>
         <a href="#recommended-section" class="nav-pill" data-section="recommended-section">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
           <span>Deals</span>
         </a>
         <a href="#search-section" class="nav-pill" data-section="search-section">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
-          <span>Routes</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span>Flights</span>
         </a>
         <a href="#trips-section" class="nav-pill" data-section="trips-section">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          <span>Planner</span>
+          <span>Trips</span>
         </a>
       </nav>
       <div class="topbar-right">
@@ -71,19 +71,19 @@
       <nav class="mobile-drawer-nav">
         <a href="#globe-section" class="mobile-nav-item" data-section="globe-section">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
-          Globe
+          Explore
         </a>
         <a href="#recommended-section" class="mobile-nav-item" data-section="recommended-section">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
           Deals
         </a>
         <a href="#search-section" class="mobile-nav-item" data-section="search-section">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
-          Routes
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Flights
         </a>
         <a href="#trips-section" class="mobile-nav-item" data-section="trips-section">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Planner
+          Trips
         </a>
       </nav>
       <div class="mobile-drawer-footer">
@@ -106,6 +106,18 @@
       <section class="globe-hero" id="globe-section">
         <div id="globeViz" class="globe-container"></div>
 
+        <!-- Value proposition headline overlay -->
+        <div class="globe-headline" id="globeHeadline">
+          <h1>Find the cheapest flights, visually.</h1>
+          <p>Search routes, track prices, and discover deals.</p>
+        </div>
+
+        <!-- Scroll-down indicator -->
+        <div class="scroll-hint" id="scrollHint">
+          <span class="scroll-hint-text">Scroll to explore deals</span>
+          <svg class="scroll-hint-chevron" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+
         <!-- Floating search bar over globe -->
         <div class="globe-search-bar" id="globeSearchBar">
           <div class="globe-search-inner">
@@ -123,10 +135,10 @@
             <div class="gsb-field gsb-to">
               <label>To</label>
               <div class="airport-autocomplete">
-                <input type="text" id="flightTo" class="gsb-input" placeholder="Where to?" value="London Heathrow (LHR)" autocomplete="off">
+                <input type="text" id="flightTo" class="gsb-input" placeholder="Where to?" autocomplete="off">
                 <div class="airport-dropdown" id="destDropdown"></div>
               </div>
-              <input type="hidden" id="destSelect" value="LHR">
+              <input type="hidden" id="destSelect" value="">
             </div>
             <div class="gsb-field gsb-date">
               <label>Depart</label>
@@ -171,20 +183,6 @@
               <option value="CNY">CNY ¥</option>
               <option value="KRW">KRW ₩</option>
             </select>
-          </div>
-        </div>
-
-        <!-- Floating: Budget slider (bottom-left) -->
-        <div class="globe-float globe-budget" id="globeBudget">
-          <label class="globe-budget-label">Budget: <span id="budgetDisplay">£0 – £500</span></label>
-          <input type="range" id="budgetSlider" min="0" max="2000" value="500" step="50" class="budget-range">
-        </div>
-
-        <!-- Floating: Top deals mini-list (bottom-right) -->
-        <div class="globe-float globe-deals" id="globeDeals">
-          <div class="globe-deals-title">Top Deals</div>
-          <div class="globe-deals-list" id="globeDealsList">
-            <div class="globe-deals-empty">Set origin to see deals</div>
           </div>
         </div>
 
@@ -311,7 +309,7 @@
                 <h3 class="panel-title">Flexible Dates</h3>
               </div>
               <div class="flex-date-grid-wrap" id="flexDateGridWrap">
-                <div class="flex-date-placeholder">Search a route to see flexible date prices</div>
+                <div class="flex-date-placeholder">Search for flights above, then come back here to compare prices across dates.</div>
               </div>
             </div>
             <!-- Right: Price History Chart -->
@@ -348,6 +346,7 @@
             <div class="empty-state">
               <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
               <p>Search for flights and click "Watch this route" to track prices.</p>
+              <button class="btn-primary btn-sm" style="margin-top:12px;" onclick="document.getElementById('flightTo').focus();document.getElementById('globe-section').scrollIntoView({behavior:'smooth'});">Search a route to watch</button>
             </div>
           </div>
           <!-- Alerts section -->
@@ -374,6 +373,7 @@
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
               <p>No trips saved yet.</p>
               <p class="text-muted-sm">Search for flights and save them here to build your travel plan.</p>
+              <button class="btn-primary btn-sm" style="margin-top:12px;" onclick="document.getElementById('tripModal').classList.add('open');">Create your first trip</button>
             </div>
           </div>
         </section>
@@ -489,6 +489,24 @@
           <input type="text" id="settingAmadeusKey" placeholder="Get free at developers.amadeus.com">
         </div>
         <button class="btn-primary full-width" id="saveSettings">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PRICE ALERT MODAL ===== -->
+  <div class="modal-overlay" id="alertModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Set Price Alert</h2>
+        <button class="modal-close" id="closeAlertModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="alert-modal-route" id="alertModalRoute" style="font-size:14px;font-weight:600;margin-bottom:16px;"></p>
+        <div class="form-group">
+          <label>Alert me when price drops below</label>
+          <input type="number" id="alertTargetPrice" placeholder="e.g. 200">
+        </div>
+        <button class="btn-primary full-width" id="alertSaveBtn">Set Alert</button>
       </div>
     </div>
   </div>
