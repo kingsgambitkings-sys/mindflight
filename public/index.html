@@ -300,11 +300,19 @@
 
           <div class="results-toolbar" id="resultsToolbar" style="display:none;">
             <span class="results-count" id="resultsCount"></span>
-            <div class="sort-pills">
-              <button class="sort-pill active" data-sort="price">Cheapest</button>
-              <button class="sort-pill" data-sort="duration">Fastest</button>
-              <button class="sort-pill" data-sort="departure">Earliest</button>
+            <div class="result-tabs">
+              <button class="result-tab active" data-tab="best">Best</button>
+              <button class="result-tab" data-tab="cheapest">Cheapest</button>
+              <button class="result-tab" data-tab="fastest">Fastest</button>
             </div>
+          </div>
+          <div class="filter-chips" id="filterChips" style="display:none;">
+            <button class="filter-chip" data-filter="nonstop">Nonstop only</button>
+            <button class="filter-chip" data-filter="1stop">1 stop max</button>
+            <button class="filter-chip" data-filter="short">Under 8h</button>
+          </div>
+          <div class="price-bars" id="priceBarsWrap" style="display:none;">
+            <div class="price-bars-inner" id="priceBars"></div>
           </div>
           <div id="flightResults"></div>
         </section>
