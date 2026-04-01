@@ -8,9 +8,10 @@ import dotenv from 'dotenv';
 import cron from 'node-cron';
 
 import { gatewayRouter } from './gateway.js';
-import { amadeusRouter } from './amadeus.js';
+import { amadeusRouter, calculateCO2, getNearbyAirports } from './amadeus.js';
 import { memoryStore } from './memory.js';
 import { settingsStore } from './settings.js';
+import crypto from 'crypto';
 
 dotenv.config();
 
@@ -281,6 +282,231 @@ app.get('/api/city-costs', (req, res) => {
     const costsPath = join(__dirname, '..', 'data', 'city-costs.json');
     const data = JSON.parse(readFileSync(costsPath, 'utf8'));
     res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== Visa Requirements =====
+app.get('/api/visa', (req, res) => {
+  try {
+    const { passport, destination } = req.query;
+    if (!passport || !destination) return res.status(400).json({ error: 'Missing passport or destination' });
+    const visaPath = join(__dirname, '..', 'data', 'visa-requirements.json');
+    const data = JSON.parse(readFileSync(visaPath, 'utf8'));
+    const p = passport.toUpperCase();
+    const d = destination.toUpperCase();
+    if (!data[p]) return res.json({ passport: p, destination: d, info: null, note: 'Passport nationality not found' });
+    const info = data[p][d] || null;
+    res.json({ passport: p, destination: d, info });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== Destination Facts =====
+app.get('/api/destination-facts/:city', (req, res) => {
+  try {
+    const factsPath = join(__dirname, '..', 'data', 'destination-facts.json');
+    const data = JSON.parse(readFileSync(factsPath, 'utf8'));
+    const city = req.params.city;
+    // Try exact match first, then case-insensitive
+    let facts = data[city];
+    if (!facts) {
+      const key = Object.keys(data).find(k => k.toLowerCase() === city.toLowerCase());
+      facts = key ? data[key] : null;
+    }
+    if (!facts) return res.status(404).json({ error: 'City not found' });
+    res.json({ city: req.params.city, facts });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== Airline Ratings =====
+app.get('/api/airline-ratings/:iata', (req, res) => {
+  try {
+    const ratingsPath = join(__dirname, '..', 'data', 'airline-ratings.json');
+    const data = JSON.parse(readFileSync(ratingsPath, 'utf8'));
+    const iata = req.params.iata.toUpperCase();
+    const rating = data[iata];
+    if (!rating) return res.status(404).json({ error: 'Airline not found' });
+    res.json({ iata, ...rating });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/airline-ratings', (req, res) => {
+  try {
+    const ratingsPath = join(__dirname, '..', 'data', 'airline-ratings.json');
+    const data = JSON.parse(readFileSync(ratingsPath, 'utf8'));
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== Baggage Policies =====
+app.get('/api/baggage/:iata', (req, res) => {
+  try {
+    const baggagePath = join(__dirname, '..', 'data', 'baggage-policies.json');
+    const data = JSON.parse(readFileSync(baggagePath, 'utf8'));
+    const iata = req.params.iata.toUpperCase();
+    const policy = data[iata];
+    if (!policy) return res.status(404).json({ error: 'Airline not found' });
+    res.json({ iata, ...policy });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== Airport Info =====
+app.get('/api/airport-info/:iata', (req, res) => {
+  try {
+    const infoPath = join(__dirname, '..', 'data', 'airport-info.json');
+    const data = JSON.parse(readFileSync(infoPath, 'utf8'));
+    const iata = req.params.iata.toUpperCase();
+    const info = data[iata];
+    if (!info) return res.status(404).json({ error: 'Airport not found' });
+    res.json({ iata, ...info });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== Holidays =====
+app.get('/api/holidays', (req, res) => {
+  try {
+    const holidaysPath = join(__dirname, '..', 'data', 'holidays.json');
+    const data = JSON.parse(readFileSync(holidaysPath, 'utf8'));
+    let filtered = data;
+    const { country, month } = req.query;
+    if (country) {
+      const c = country.toUpperCase();
+      filtered = filtered.filter(h => h.countries.includes(c));
+    }
+    if (month) {
+      const m = parseInt(month);
+      filtered = filtered.filter(h => {
+        const hMonth = parseInt(h.date.split('-')[1]);
+        return hMonth === m;
+      });
+    }
+    res.json({ holidays: filtered, count: filtered.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== Seasonal Guide =====
+app.get('/api/seasonal-guide/:city', (req, res) => {
+  try {
+    const guidePath = join(__dirname, '..', 'data', 'seasonal-guide.json');
+    const data = JSON.parse(readFileSync(guidePath, 'utf8'));
+    const city = req.params.city;
+    let guide = data[city];
+    if (!guide) {
+      const key = Object.keys(data).find(k => k.toLowerCase() === city.toLowerCase());
+      guide = key ? data[key] : null;
+    }
+    if (!guide) return res.status(404).json({ error: 'City not found' });
+    res.json({ city: req.params.city, ...guide });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== Timezone Lookup =====
+app.get('/api/timezone/:iata', (req, res) => {
+  try {
+    const tzPath = join(__dirname, '..', 'data', 'airport-timezones.json');
+    const data = JSON.parse(readFileSync(tzPath, 'utf8'));
+    const iata = req.params.iata.toUpperCase();
+    const timezone = data[iata];
+    if (!timezone) return res.status(404).json({ error: 'Airport not found' });
+    res.json({ iata, timezone });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== Price Prediction =====
+app.get('/api/price-prediction', (req, res) => {
+  try {
+    const { origin, destination } = req.query;
+    if (!origin || !destination) return res.status(400).json({ error: 'Missing origin or destination' });
+    const prediction = memoryStore.getPricePrediction(origin, destination);
+    res.json(prediction);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== Shareable Trip/Search =====
+app.post('/api/share', (req, res) => {
+  try {
+    const { type, data } = req.body;
+    if (!type || !data) return res.status(400).json({ error: 'Missing type or data' });
+    const id = crypto.randomBytes(6).toString('hex');
+    memoryStore.insertSharedLink(id, type, data);
+    res.json({ id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/share/:id', (req, res) => {
+  try {
+    const link = memoryStore.getSharedLink(req.params.id);
+    if (!link) return res.status(404).json({ error: 'Link not found' });
+    res.json(link);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== Recent Searches =====
+app.post('/api/recent-searches', (req, res) => {
+  try {
+    const { origin, destination, date, cheapestPrice, currency } = req.body;
+    if (!origin || !destination) return res.status(400).json({ error: 'Missing origin or destination' });
+    memoryStore.insertRecentSearch(origin, destination, date, cheapestPrice, currency);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/recent-searches', (req, res) => {
+  try {
+    res.json({ searches: memoryStore.getRecentSearches() });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== Nearby Airports =====
+app.get('/api/nearby-airports', (req, res) => {
+  try {
+    const { code, radius } = req.query;
+    if (!code) return res.status(400).json({ error: 'Missing code' });
+    const r = parseInt(radius) || 150;
+    const airports = getNearbyAirports(code, r);
+    res.json({ code: code.toUpperCase(), radius: r, airports, count: airports.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== CO2 Calculator (standalone endpoint) =====
+app.get('/api/co2', (req, res) => {
+  try {
+    const { origin, destination, cabin } = req.query;
+    if (!origin || !destination) return res.status(400).json({ error: 'Missing origin or destination' });
+    const result = calculateCO2(origin, destination, cabin || 'economy');
+    if (!result) return res.status(404).json({ error: 'Airport code not found' });
+    res.json({ origin: origin.toUpperCase(), destination: destination.toUpperCase(), cabin: (cabin || 'economy').toLowerCase(), ...result });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

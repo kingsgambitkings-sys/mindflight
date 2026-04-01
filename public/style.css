@@ -1914,3 +1914,669 @@ html { scroll-padding-top: 140px; }
 @media (min-width: 768px) {
   .mobile-drawer, .mobile-drawer-overlay { display: none !important; }
 }
+
+/* ============================================================
+   NEW FEATURES STYLES (20 Features)
+   ============================================================ */
+
+/* ===== FEATURE 1: CO2 EMISSIONS BADGE ===== */
+.co2-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+  margin-top: 4px;
+}
+.co2-green { background: var(--success-light); color: var(--success); }
+.co2-amber { background: var(--warning-light); color: var(--warning); }
+.co2-red { background: var(--danger-light); color: var(--danger); }
+
+.flight-meta-extras {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+/* ===== FEATURE 2: VISA BADGE ===== */
+.visa-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 700;
+}
+.visa-green { background: var(--success-light); color: var(--success); }
+.visa-yellow { background: var(--warning-light); color: var(--warning); }
+.visa-red { background: var(--danger-light); color: var(--danger); }
+
+/* ===== FEATURE 3: QUICK FACTS GRID ===== */
+.quick-facts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 8px;
+}
+.quick-fact-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 8px 4px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.quick-fact-icon { font-size: 18px; margin-bottom: 2px; }
+.quick-fact-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+.quick-fact-value {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ===== FEATURE 4: AIRLINE RATING BADGE ===== */
+.airline-rating-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--warning);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* ===== FEATURE 5: TRIP COUNTDOWN ===== */
+.trip-countdown {
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  display: inline-block;
+}
+.countdown-upcoming { background: var(--accent-glow); color: var(--accent); }
+.countdown-active { background: var(--success-light); color: var(--success); }
+.countdown-completed { background: var(--bg-elevated); color: var(--text-muted); }
+
+/* ===== FEATURE 6: RECENT SEARCHES ===== */
+.recent-searches-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+.recent-searches-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.recent-search-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+  min-width: 160px;
+  font-family: var(--font-sans);
+  text-align: left;
+}
+.recent-search-card:hover {
+  border-color: var(--accent-border);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+.recent-route {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.recent-meta {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.price-change-down {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--success);
+}
+.price-change-up {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--danger);
+}
+
+/* ===== FEATURE 7: SEARCH TEMPLATES ===== */
+.gsb-template-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  background: rgba(255,255,255,0.06);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  flex-shrink: 0;
+  margin-bottom: 1px;
+}
+.gsb-template-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-glow);
+}
+.search-templates {
+  display: flex;
+  gap: 6px;
+  padding: 6px 4px 0;
+  overflow-x: auto;
+  flex-wrap: wrap;
+}
+.search-template-chip {
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition);
+}
+.search-template-chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-glow);
+}
+.template-save-chip {
+  border-style: dashed;
+  color: var(--text-muted);
+}
+
+/* ===== FEATURE 8: TIMEZONE DISPLAY ===== */
+.timezone-info {
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.timezone-info strong {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+.tz-icon { font-size: 16px; }
+.local-time-label {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: 2px;
+}
+
+/* ===== FEATURE 9: HOLIDAY MARKERS ===== */
+.cal-holiday-marker {
+  font-size: 8px;
+  color: var(--warning);
+  position: absolute;
+  top: 2px;
+  right: 2px;
+}
+.cal-day {
+  position: relative;
+}
+
+/* ===== FEATURE 10: COMPARE BAR & TABLE ===== */
+.compare-bar {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 250;
+  animation: fadeInUp 0.3s ease;
+}
+.compare-count {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.flight-compare-wrap {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.flight-compare-check {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.compare-table-wrap {
+  overflow-x: auto;
+  max-width: 100%;
+}
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.compare-table th {
+  padding: 10px 16px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 12px;
+  border-bottom: 2px solid var(--border);
+  color: var(--text-primary);
+}
+.compare-table td {
+  padding: 10px 16px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+.compare-row-label {
+  text-align: left !important;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.compare-best {
+  color: var(--success) !important;
+  font-weight: 700 !important;
+  background: var(--success-light);
+}
+.compare-book-btn {
+  text-decoration: none;
+  display: inline-block;
+}
+
+/* ===== FEATURE 11: LAYOVER EXPLORER ===== */
+.layover-features {
+  display: block;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  padding: 4px 8px;
+  background: var(--bg-elevated);
+  border-radius: 4px;
+}
+.layover-explore-hint {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* ===== FEATURE 12: BAGGAGE BADGE & TOOLTIP ===== */
+.baggage-badge {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: var(--transition);
+  position: relative;
+}
+.baggage-badge:hover { color: var(--accent); }
+.baggage-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  box-shadow: var(--shadow-md);
+  z-index: 50;
+  white-space: nowrap;
+  animation: fadeInUp 0.2s ease;
+}
+.baggage-tooltip-content {
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.baggage-extra-cost {
+  color: var(--warning);
+  font-weight: 600;
+}
+
+/* ===== FEATURE 13: SEASONAL GUIDE ===== */
+.seasonal-guide {
+  margin-top: 8px;
+}
+.seasonal-guide-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.seasonal-bar {
+  display: flex;
+  gap: 2px;
+  height: 36px;
+}
+.seasonal-month {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+}
+.seasonal-month:hover { transform: scaleY(1.1); }
+.seasonal-great { background: var(--success-light); }
+.seasonal-ok { background: var(--warning-light); }
+.seasonal-avoid { background: var(--danger-light); }
+.seasonal-current {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  z-index: 1;
+}
+.seasonal-month-label {
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+.seasonal-month-temp {
+  font-size: 7px;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* ===== FEATURE 14: WEATHER FORECAST ===== */
+.weather-forecast {
+  margin-top: 8px;
+}
+.weather-forecast-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.weather-forecast-strip {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+}
+.weather-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  min-width: 58px;
+  text-align: center;
+}
+.weather-day-name {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+.weather-day-icon { font-size: 18px; }
+.weather-day-temps {
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+.weather-day-precip {
+  font-size: 9px;
+  color: var(--secondary);
+  font-weight: 600;
+}
+
+/* ===== FEATURE 15: WEEKEND GETAWAYS ===== */
+.weekend-scroll {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+.weekend-card {
+  min-width: 180px;
+  padding: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition);
+  text-align: left;
+  font-family: var(--font-sans);
+}
+.weekend-card:hover {
+  border-color: var(--accent-border);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.weekend-card-city {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.weekend-card-dates {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.weekend-card-price {
+  font-size: 16px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: var(--accent);
+}
+
+/* ===== FEATURE 16: ICS EXPORT (no special CSS needed, uses btn-outline) ===== */
+
+/* ===== FEATURE 17: SHARE LINK (toast handles feedback) ===== */
+
+/* ===== FEATURE 18: NEARBY AIRPORT BADGE ===== */
+.nearby-airport-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--secondary-glow);
+  color: var(--secondary);
+  font-size: 10px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+/* ===== FEATURE 19: PRICE PREDICTION CARD ===== */
+.prediction-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  margin-top: 12px;
+  border: 1px solid var(--border);
+}
+.prediction-down {
+  background: var(--success-light);
+  border-color: var(--success);
+}
+.prediction-up {
+  background: var(--danger-light);
+  border-color: var(--danger);
+}
+.prediction-stable {
+  background: var(--warning-light);
+  border-color: var(--warning);
+}
+.prediction-icon {
+  font-size: 28px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.prediction-down .prediction-icon { color: var(--success); }
+.prediction-up .prediction-icon { color: var(--danger); }
+.prediction-stable .prediction-icon { color: var(--warning); }
+.prediction-text {
+  flex: 1;
+}
+.prediction-text strong {
+  font-size: 14px;
+  display: block;
+  margin-bottom: 2px;
+}
+.prediction-text p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
+}
+.prediction-meta {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  display: block;
+}
+
+/* ===== FEATURE 20: BUDGET BREAKDOWN ===== */
+.budget-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.budget-cat-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.budget-cat-icon {
+  font-size: 16px;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.budget-cat-row .cost-input {
+  flex: 1;
+  width: 100%;
+}
+.budget-breakdown {
+  margin-top: 8px;
+  padding: 10px 14px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.budget-breakdown-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.budget-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.budget-cat-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 80px;
+}
+.budget-bar-track {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-surface);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.budget-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+.budget-cat-val {
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  min-width: 50px;
+  text-align: right;
+}
+.budget-total {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  text-align: right;
+}
+
+/* ===== MOBILE RESPONSIVE ADDITIONS ===== */
+@media (max-width: 767px) {
+  .compare-bar {
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+    transform: none;
+    gap: 8px;
+  }
+  .weekend-card { min-width: 150px; }
+  .quick-facts-grid { grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); }
+  .weather-day { min-width: 52px; padding: 4px 6px; }
+  .seasonal-month-temp { display: none; }
+  .compare-table th,
+  .compare-table td { padding: 8px 10px; font-size: 11px; }
+}

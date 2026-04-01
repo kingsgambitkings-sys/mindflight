@@ -65,6 +65,23 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now')),
     last_checked_at TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS shared_links (
+    id TEXT PRIMARY KEY,
+    type TEXT NOT NULL,
+    data TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS recent_searches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    origin TEXT NOT NULL,
+    destination TEXT NOT NULL,
+    date TEXT,
+    cheapest_price REAL,
+    currency TEXT DEFAULT 'GBP',
+    searched_at TEXT DEFAULT (datetime('now'))
+  );
 `);
 
 const stmts = {
@@ -182,6 +199,28 @@ const stmts = {
     FROM flight_prices
     WHERE origin = ? AND destination = ? AND checked_at >= datetime('now', '-24 hours')
   `),
+
+  // Price trend for last N days
+  getPriceTrend: db.prepare(`
+    SELECT
+      DATE(checked_at) AS date,
+      ROUND(AVG(price), 2) AS avg_price,
+      MIN(price) AS min_price,
+      MAX(price) AS max_price,
+      COUNT(*) AS count
+    FROM flight_prices
+    WHERE origin = ? AND destination = ? AND checked_at >= datetime('now', '-' || ? || ' days')
+    GROUP BY DATE(checked_at)
+    ORDER BY date ASC
+  `),
+
+  // Shared links
+  insertSharedLink: db.prepare('INSERT INTO shared_links (id, type, data) VALUES (?, ?, ?)'),
+  getSharedLink: db.prepare('SELECT * FROM shared_links WHERE id = ?'),
+
+  // Recent searches
+  insertRecentSearch: db.prepare('INSERT INTO recent_searches (origin, destination, date, cheapest_price, currency) VALUES (?, ?, ?, ?, ?)'),
+  getRecentSearches: db.prepare('SELECT * FROM recent_searches ORDER BY searched_at DESC LIMIT 20'),
 };
 
 export const memoryStore = {
@@ -273,5 +312,66 @@ export const memoryStore = {
   // === Cheapest recent price for alert checking ===
   getCheapestRecentPrice(origin, destination) {
     return stmts.getCheapestRecentPrice.get(origin.toUpperCase(), destination.toUpperCase());
+  },
+
+  // === Price Trend (last N days) ===
+  getPriceTrend(origin, destination, days = 30) {
+    return stmts.getPriceTrend.all(origin.toUpperCase(), destination.toUpperCase(), days);
+  },
+
+  // === Price Prediction ===
+  getPricePrediction(origin, destination) {
+    const o = origin.toUpperCase();
+    const d = destination.toUpperCase();
+    const trend = stmts.getPriceTrend.all(o, d, 30);
+    if (!trend.length) {
+      return { direction: 'stable', confidence: 'low', avgPrice: null, minPrice: null, maxPrice: null, dataPoints: 0, changePercent: 0 };
+    }
+
+    const prices = trend.map(r => r.avg_price);
+    const n = prices.length;
+    const avgPrice = Math.round(prices.reduce((s, p) => s + p, 0) / n * 100) / 100;
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+
+    // Simple linear regression for trend direction
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+    for (let i = 0; i < n; i++) {
+      sumX += i; sumY += prices[i]; sumXY += i * prices[i]; sumX2 += i * i;
+    }
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const avgY = sumY / n;
+    const changePercent = avgY > 0 ? Math.round((slope * n / avgY) * 10000) / 100 : 0;
+
+    let direction, confidence;
+    const absChange = Math.abs(changePercent);
+
+    if (absChange < 2) { direction = 'stable'; }
+    else if (slope > 0) { direction = 'rising'; }
+    else { direction = 'falling'; }
+
+    if (n >= 14 && absChange > 5) { confidence = 'high'; }
+    else if (n >= 7 && absChange > 2) { confidence = 'medium'; }
+    else { confidence = 'low'; }
+
+    return { direction, confidence, avgPrice, minPrice, maxPrice, dataPoints: n, changePercent };
+  },
+
+  // === Shared Links ===
+  insertSharedLink(id, type, data) {
+    stmts.insertSharedLink.run(id, type, JSON.stringify(data));
+  },
+  getSharedLink(id) {
+    const row = stmts.getSharedLink.get(id);
+    if (!row) return null;
+    return { id: row.id, type: row.type, data: JSON.parse(row.data), created_at: row.created_at };
+  },
+
+  // === Recent Searches ===
+  insertRecentSearch(origin, destination, date, cheapestPrice, currency) {
+    stmts.insertRecentSearch.run(origin.toUpperCase(), destination.toUpperCase(), date, cheapestPrice, currency || 'GBP');
+  },
+  getRecentSearches() {
+    return stmts.getRecentSearches.all();
   },
 };
