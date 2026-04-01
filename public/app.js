@@ -52,6 +52,10 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('travel-currency', this.value);
   });
 
+  initRouteContextBar();
+  initScrollAnimations();
+  initActionBridge();
+
   // Fix 17: Check URL params for auto-search
   checkUrlParams();
 });
@@ -313,7 +317,12 @@ function initSpinDart() {
   });
   document.getElementById('discoverySearchBtn')?.addEventListener('click', () => {
     const code = document.getElementById('discoverySearchBtn').dataset.code;
-    if (code) { setDestCode(code); searchFlightsUI(); }
+    if (code) {
+      setDestCode(code);
+      // Compact mode: collapse discovery card
+      document.getElementById('discoveryCard')?.classList.add('compact');
+      searchFlightsUI();
+    }
   });
 }
 
@@ -363,10 +372,12 @@ async function showDiscoveryCard(dest, origin) {
   const section = document.getElementById('discoverySection');
   const hero = document.getElementById('discoveryHero');
   section.style.display = '';
+  document.getElementById('discoveryCard')?.classList.remove('compact');
   document.getElementById('discoveryCity').textContent = dest.city;
   document.getElementById('discoveryCountry').textContent = `${dest.flag} ${dest.country}`;
   document.getElementById('discoverySearchBtn').dataset.code = dest.code;
 
+  updateRouteContextBar({ step: 'discover' });
   const cleanCity = dest.city.replace(/ (Narita|Haneda|Incheon|Heathrow|Gatwick|JFK|Changi|International|Airport)$/i, '').trim();
   hero.style.backgroundImage = 'none';
   fetchCityImage(cleanCity).then(url => { if (url) hero.style.backgroundImage = `url(${url})`; });
@@ -582,6 +593,11 @@ async function searchFlightsUI() {
       showDealRecommendation(data.flights, origin, destination);
       showPriceCalendar(origin, destination);
       loadFlexDateGrid(origin, destination, date);
+      updateRouteContextBar({ step: 'search' });
+      updateContextualHeaders();
+      // Show action bridge
+      var actionBridge = document.getElementById('actionBridge');
+      if (actionBridge) actionBridge.style.display = '';
       // Update price explorer route label
       document.getElementById('priceExplorerRoute').textContent = `${origin} → ${destination}`;
       // Fix 17: push URL state
@@ -693,7 +709,12 @@ function renderFlightResults(flights) {
   }).join('') + `<div style="display:flex;gap:8px;justify-content:flex-end;padding:8px 0;">
     <button class="btn-text" onclick="watchRoute('${escapeHtml(origin)}','${escapeHtml(dest)}','${escapeHtml(date)}')">Watch this route</button>
     <button class="btn-text" onclick="openRouteIntel('${escapeHtml(origin)}','${escapeHtml(dest)}')">Route Intel</button>
-  </div>`;
+  </div>` +
+  `<div class="section-flow-cta">` +
+  `<div class="flow-line"></div>` +
+  `<span class="flow-label">Is this a good deal?</span>` +
+  `<button class="flow-btn" onclick="document.getElementById('dealSection').scrollIntoView({behavior:'smooth'})">See Deal Analysis &#8595;</button>` +
+  `</div>`;
 }
 
 function toggleFlightDetail(idx) {
@@ -730,6 +751,17 @@ function showDealRecommendation(flights, origin, destination) {
     <div class="deal-stat"><div class="deal-stat-value">${formatPrice(avg,dc)}</div><div class="deal-stat-label">Average</div></div>
     <div class="deal-stat"><div class="deal-stat-value">${formatPrice(hi,dc)}</div><div class="deal-stat-label">Highest</div></div>
     <div class="deal-stat"><div class="deal-stat-value">${flights.length}</div><div class="deal-stat-label">Options</div></div>`;
+  updateRouteContextBar({ step: 'compare' });
+  // Flow CTA: after deal analysis -> price explorer
+  var existingDealCta = document.getElementById('dealFlowCta');
+  if (existingDealCta) existingDealCta.remove();
+  document.getElementById('dealCard')?.insertAdjacentHTML('afterend',
+    '<div class="section-flow-cta" id="dealFlowCta">' +
+    '<div class="flow-line"></div>' +
+    '<span class="flow-label">Explore flexible dates</span>' +
+    '<button class="flow-btn" onclick="document.getElementById(\'price-explorer-section\').scrollIntoView({behavior:\'smooth\'})">Price Explorer &#8595;</button>' +
+    '</div>'
+  );
 }
 
 // ===== WATCHED ROUTES =====
@@ -1373,6 +1405,7 @@ function setDestCode(code) {
       globeInstance.arcsData(arcs);
     }
   }
+  updateRouteContextBar({ step: 'explore' });
 }
 
 // ===== FIX 1: SCROLL HINT — hide after scrolling past =====
@@ -1480,4 +1513,130 @@ function checkUrlParams() {
     if (date) document.getElementById('flightDate').value = date;
     setTimeout(() => searchFlightsUI(), 500);
   }
+}
+
+// ===== ROUTE CONTEXT BAR =====
+function updateRouteContextBar(opts) {
+  var step = (opts && opts.step) || 'explore';
+  var bar = document.getElementById('routeContextBar');
+  if (!bar) return;
+  var dest = getDestCode();
+  if (!dest) { bar.classList.remove('visible'); return; }
+  bar.classList.add('visible');
+  var origin = document.getElementById('originSelect') ? document.getElementById('originSelect').value : 'HKG';
+  var date = document.getElementById('flightDate') ? document.getElementById('flightDate').value : '';
+  var pax = document.getElementById('flightPax') ? document.getElementById('flightPax').value : '1';
+  var rcbOrigin = document.getElementById('rcbOrigin');
+  var rcbDest = document.getElementById('rcbDest');
+  var rcbDate = document.getElementById('rcbDate');
+  var rcbPax = document.getElementById('rcbPax');
+  if (rcbOrigin) rcbOrigin.textContent = origin;
+  if (rcbDest) rcbDest.textContent = dest;
+  if (rcbDate && date) {
+    try { rcbDate.textContent = new Date(date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch(e) { rcbDate.textContent = date; }
+  }
+  if (rcbPax) rcbPax.textContent = pax + ' pax';
+  // Update steps
+  var stepOrder = ['explore', 'discover', 'search', 'compare', 'act'];
+  var activeIdx = stepOrder.indexOf(step);
+  var steps = document.querySelectorAll('#rcbSteps .rcb-step');
+  steps.forEach(function(el, i) {
+    el.classList.remove('completed', 'active');
+    if (i < activeIdx) el.classList.add('completed');
+    else if (i === activeIdx) el.classList.add('active');
+  });
+}
+
+function initRouteContextBar() {
+  // Edit search button
+  document.getElementById('rcbEditSearch')?.addEventListener('click', function() {
+    document.getElementById('globe-section')?.scrollIntoView({ behavior: 'smooth' });
+    setTimeout(function() { document.getElementById('flightTo')?.focus(); }, 500);
+  });
+  // Clear route button
+  document.getElementById('rcbClear')?.addEventListener('click', function() {
+    var destHidden = document.getElementById('destSelect');
+    var destInput = document.getElementById('flightTo');
+    if (destHidden) destHidden.value = '';
+    if (destInput) destInput.value = '';
+    document.getElementById('routeContextBar')?.classList.remove('visible');
+  });
+  // Step dot clicks
+  var stepTargets = {
+    explore: 'globe-section',
+    discover: 'discoverySection',
+    search: 'search-section',
+    compare: 'price-explorer-section',
+    act: 'watched-section'
+  };
+  document.querySelectorAll('#rcbSteps .rcb-step').forEach(function(el) {
+    el.addEventListener('click', function() {
+      var step = el.getAttribute('data-step');
+      var target = stepTargets[step];
+      if (target) document.getElementById(target)?.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+}
+
+// ===== SCROLL-TRIGGERED ENTRANCE ANIMATIONS =====
+function initScrollAnimations() {
+  var sections = document.querySelectorAll('.content-section');
+  sections.forEach(function(s) { s.classList.add('animate-in'); });
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.05 });
+  sections.forEach(function(s) { observer.observe(s); });
+}
+
+// ===== CONTEXTUAL SECTION HEADERS =====
+function updateContextualHeaders() {
+  var origin = document.getElementById('originSelect') ? document.getElementById('originSelect').value : 'HKG';
+  var dest = getDestCode();
+  if (!dest) return;
+  var originAirport = AIRPORTS.find(function(a) { return a.code === origin; });
+  var destAirport = AIRPORTS.find(function(a) { return a.code === dest; });
+  // Deal Analysis header
+  var dealHeader = document.querySelector('#dealSection .section-title');
+  if (dealHeader) dealHeader.textContent = 'Deal Analysis: ' + origin + ' \u2192 ' + dest;
+  // Price Explorer subtitle
+  var peRoute = document.getElementById('priceExplorerRoute');
+  if (peRoute && originAirport && destAirport) {
+    peRoute.textContent = 'Compare prices for ' + originAirport.city + ' to ' + destAirport.city;
+  }
+}
+
+// ===== INIT ACTION BRIDGE =====
+function initActionBridge() {
+  document.getElementById('abWatchRoute')?.addEventListener('click', function() {
+    var origin = document.getElementById('originSelect') ? document.getElementById('originSelect').value : 'HKG';
+    var dest = getDestCode();
+    var date = document.getElementById('flightDate') ? document.getElementById('flightDate').value : '';
+    if (origin && dest && date) watchRoute(origin, dest, date);
+  });
+  document.getElementById('abSetAlert')?.addEventListener('click', function() {
+    var origin = document.getElementById('originSelect') ? document.getElementById('originSelect').value : 'HKG';
+    var dest = getDestCode();
+    if (origin && dest) promptAlert(origin, dest);
+  });
+  document.getElementById('abSaveTrip')?.addEventListener('click', function() {
+    var dest = getDestCode();
+    var destAirport = AIRPORTS.find(function(a) { return a.code === dest; });
+    var modal = document.getElementById('tripModal');
+    if (destAirport) {
+      var destInput = document.getElementById('tripDestinations');
+      if (destInput) destInput.value = destAirport.city;
+    }
+    if (modal) modal.classList.add('open');
+  });
+  document.getElementById('abBookNow')?.addEventListener('click', function() {
+    var origin = document.getElementById('originSelect') ? document.getElementById('originSelect').value : 'HKG';
+    var dest = getDestCode();
+    var date = document.getElementById('flightDate') ? document.getElementById('flightDate').value : '';
+    var urls = buildBookingUrl(origin, dest, date, '');
+    window.open(urls.google, '_blank');
+  });
 }

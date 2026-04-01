@@ -58,6 +58,36 @@
       </div>
     </header>
 
+    <!-- ===== ROUTE CONTEXT BAR ===== -->
+    <div class="route-context-bar" id="routeContextBar">
+      <div class="rcb-inner">
+        <div class="rcb-route">
+          <span class="rcb-origin" id="rcbOrigin">HKG</span>
+          <svg class="rcb-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          <span class="rcb-dest" id="rcbDest">---</span>
+        </div>
+        <div class="rcb-meta">
+          <span class="rcb-date" id="rcbDate"></span>
+          <span class="rcb-pax" id="rcbPax"></span>
+        </div>
+        <div class="rcb-actions">
+          <button class="rcb-btn" id="rcbEditSearch" title="Edit search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+          <button class="rcb-btn" id="rcbClear" title="Clear route"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+      </div>
+      <div class="rcb-steps" id="rcbSteps">
+        <div class="rcb-step completed" data-step="explore"><span class="rcb-step-dot"></span><span class="rcb-step-label">Explore</span></div>
+        <div class="rcb-step-connector"></div>
+        <div class="rcb-step" data-step="discover"><span class="rcb-step-dot"></span><span class="rcb-step-label">Discover</span></div>
+        <div class="rcb-step-connector"></div>
+        <div class="rcb-step" data-step="search"><span class="rcb-step-dot"></span><span class="rcb-step-label">Flights</span></div>
+        <div class="rcb-step-connector"></div>
+        <div class="rcb-step" data-step="compare"><span class="rcb-step-dot"></span><span class="rcb-step-label">Compare</span></div>
+        <div class="rcb-step-connector"></div>
+        <div class="rcb-step" data-step="act"><span class="rcb-step-dot"></span><span class="rcb-step-label">Book</span></div>
+      </div>
+    </div>
+
     <!-- ===== MOBILE NAV DRAWER ===== -->
     <div class="mobile-drawer-overlay" id="mobileDrawerOverlay"></div>
     <aside class="mobile-drawer" id="mobileDrawer">
@@ -329,6 +359,33 @@
                 <span id="chartRoute">No data yet</span>
                 <span>Powered by Amadeus</span>
               </div>
+            </div>
+          </div>
+          <!-- Action Bridge Panel -->
+          <div class="action-bridge" id="actionBridge" style="display:none;">
+            <h3 class="action-bridge-title">Ready to act?</h3>
+            <p class="action-bridge-sub">You've explored the data. Now take the next step.</p>
+            <div class="action-bridge-grid">
+              <button class="action-bridge-card" id="abWatchRoute">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <span class="ab-card-title">Watch Route</span>
+                <span class="ab-card-desc">Track price changes over time</span>
+              </button>
+              <button class="action-bridge-card" id="abSetAlert">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                <span class="ab-card-title">Set Alert</span>
+                <span class="ab-card-desc">Get notified when price drops</span>
+              </button>
+              <button class="action-bridge-card" id="abSaveTrip">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span class="ab-card-title">Save to Trip</span>
+                <span class="ab-card-desc">Add to your travel plan</span>
+              </button>
+              <button class="action-bridge-card" id="abBookNow">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                <span class="ab-card-title">Book Now</span>
+                <span class="ab-card-desc">Open Google Flights to book</span>
+              </button>
             </div>
           </div>
         </section>
