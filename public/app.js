@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initNavigation();
   initGlobe();
   initAirportAutocomplete('originInput', 'originDropdown', 'originSelect', onOriginChange);
-  initAirportAutocomplete('flightTo', 'destDropdown', 'destSelect', null);
+  initAirportAutocomplete('flightTo', 'destDropdown', 'destSelect', onDestinationChange);
   initSearch();
   initSpinDart();
   initPriceCalendar();
@@ -222,6 +222,28 @@ function onOriginChange(airport) {
     globeInstance.arcsData(arcs);
     globeInstance.pointOfView({ lat: airport.lat, lng: airport.lon, altitude: 2.2 }, 1000);
   }
+}
+
+function onDestinationChange(airport) {
+  const origin = document.getElementById('originSelect')?.value || 'HKG';
+  // Update subtitle
+  const originAirport = AIRPORTS.find(a => a.code === origin);
+  const subtitle = document.getElementById('recommendedSubtitle');
+  if (subtitle) subtitle.innerHTML = `Flights from <strong>${originAirport?.city || origin}</strong> to <strong>${airport.city}</strong>`;
+  // Focus globe on destination with route arc
+  if (globeInstance) {
+    const originData = AIRPORTS.find(a => a.code === origin);
+    if (originData) {
+      globeInstance.arcsData([{
+        startLat: originData.lat, startLng: originData.lon,
+        endLat: airport.lat, endLng: airport.lon,
+        color: ['rgba(0,212,170,0.8)', 'rgba(0,212,170,0.2)'],
+      }]);
+    }
+    globeInstance.pointOfView({ lat: airport.lat, lng: airport.lon, altitude: 2.0 }, 1000);
+  }
+  // Show discovery card for this destination
+  showDiscoveryCard(airport, origin);
 }
 
 // ===== 3D GLOBE =====
