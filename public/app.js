@@ -549,28 +549,116 @@ async function searchFlightsUI() {
   }
 }
 
+function buildBookingUrl(origin, destination, date, airline) {
+  // Build deep links to booking platforms
+  const d = date.replace(/-/g, '');
+  const yymmdd = d.substring(2); // YYMMDD for Skyscanner
+  return {
+    google: `https://www.google.com/travel/flights/search?tfs=CBwQAhoeagcIARID${origin}cgcIARID${destination}&hl=en`,
+    skyscanner: `https://www.skyscanner.com/transport/flights/${origin.toLowerCase()}/${destination.toLowerCase()}/${yymmdd}/`,
+    kayak: `https://www.kayak.com/flights/${origin}-${destination}/${date}?sort=bestflight_a`,
+    trip: `https://www.trip.com/flights/${origin.toLowerCase()}-to-${destination.toLowerCase()}/tickets-${origin.toLowerCase()}-${destination.toLowerCase()}?dcity=${origin}&acity=${destination}&ddate=${date}`,
+  };
+}
+
+function renderSegments(segments) {
+  if (!segments || !Array.isArray(segments) || segments.length <= 1) return '';
+  return `<div class="flight-segments">
+    <div class="segments-label">Route details</div>
+    <div class="segments-timeline">
+      ${segments.map((seg, i) => {
+        const depTime = (seg.departAt||'').split('T')[1]?.substring(0,5) || '--:--';
+        const arrTime = (seg.arriveAt||'').split('T')[1]?.substring(0,5) || '--:--';
+        const layover = i < segments.length - 1 ? getLayoverTime(seg.arriveAt, segments[i+1].departAt) : '';
+        return `<div class="segment-leg">
+          <div class="segment-flight-num">${escapeHtml(seg.flightNumber)}${seg.aircraft ? ` · ${seg.aircraft}` : ''}</div>
+          <div class="segment-route">
+            <span class="segment-airport">${escapeHtml(seg.from)}${seg.fromTerminal ? ` T${seg.fromTerminal}` : ''}</span>
+            <span class="segment-time">${depTime}</span>
+            <span class="segment-arrow">→</span>
+            <span class="segment-airport">${escapeHtml(seg.to)}${seg.toTerminal ? ` T${seg.toTerminal}` : ''}</span>
+            <span class="segment-time">${arrTime}</span>
+            <span class="segment-dur">${seg.duration || ''}</span>
+          </div>
+          ${layover ? `<div class="segment-layover">Layover in ${escapeHtml(segments[i+1].from)}: ${layover}</div>` : ''}
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+function getLayoverTime(arriveAt, nextDepartAt) {
+  if (!arriveAt || !nextDepartAt) return '';
+  const arrive = new Date(arriveAt);
+  const depart = new Date(nextDepartAt);
+  const diff = depart - arrive;
+  if (diff <= 0) return '';
+  const hours = Math.floor(diff / 3600000);
+  const mins = Math.floor((diff % 3600000) / 60000);
+  return `${hours}h ${mins}m`;
+}
+
 function renderFlightResults(flights) {
   const dc = getSelectedCurrency();
   const resultsDiv = document.getElementById('flightResults');
   const origin = document.getElementById('originSelect')?.value || 'HKG';
   const dest = getDestCode();
   const date = document.getElementById('flightDate').value;
-  resultsDiv.innerHTML = flights.map(f => {
+  resultsDiv.innerHTML = flights.map((f, idx) => {
     const converted = convertPrice(parseFloat(f.total_amount), f.currency, dc);
-    return `<div class="flight-result">
-      <div class="flight-airline">${escapeHtml(f.airline || f.airline_iata)}<br><span class="flight-airline-code">${f.airline_iata||''}</span></div>
-      <div class="flight-times">
-        <span class="flight-time">${(f.departure_at||'').split('T')[1]?.substring(0,5)||'--:--'}</span>
-        <div class="flight-arrow"><div class="flight-arrow-line"></div><span class="flight-arrow-label">${f.duration||''}</span></div>
-        <span class="flight-time">${(f.arrival_at||'').split('T')[1]?.substring(0,5)||'--:--'}</span>
+    const segs = Array.isArray(f.segments) ? f.segments : [];
+    const hasSegDetails = segs.length > 0 && segs[0]?.from;
+    const bookUrls = buildBookingUrl(origin, dest, date, f.airline_iata || f.airline);
+    return `<div class="flight-result-card" data-idx="${idx}">
+      <div class="flight-result-main" onclick="toggleFlightDetail(${idx})">
+        <div class="flight-airline">${escapeHtml(f.airline || f.airline_iata)}<br><span class="flight-airline-code">${f.airline_iata||''}</span></div>
+        <div class="flight-times">
+          <span class="flight-time">${(f.departure_at||'').split('T')[1]?.substring(0,5)||'--:--'}</span>
+          <div class="flight-arrow"><div class="flight-arrow-line"></div><span class="flight-arrow-label">${f.duration||''}</span></div>
+          <span class="flight-time">${(f.arrival_at||'').split('T')[1]?.substring(0,5)||'--:--'}</span>
+        </div>
+        <div class="flight-meta">
+          ${f.stops > 0
+            ? `<span class="flight-stops-badge">${f.stops} stop${f.stops!==1?'s':''}</span>`
+            : `<span class="flight-direct-badge">Direct</span>`
+          }
+          <br>${f.cabin_class||''}
+        </div>
+        <div class="flight-price">${formatPrice(converted, dc)}${f.currency!==dc?`<br><span class="flight-price-currency">${f.currency} ${f.total_amount}</span>`:''}</div>
+        <div class="flight-expand-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
       </div>
-      <div class="flight-meta">${f.stops} stop${f.stops!==1?'s':''}<br>${f.cabin_class||''}</div>
-      <div class="flight-price">${formatPrice(converted, dc)}${f.currency!==dc?`<br><span class="flight-price-currency">${f.currency} ${f.total_amount}</span>`:''}</div>
+      <div class="flight-detail" id="flight-detail-${idx}">
+        ${hasSegDetails ? renderSegments(segs) : (f.stops > 0 ? `<div class="flight-segments"><div class="segments-label">${f.stops} connecting stop${f.stops!==1?'s':''}</div></div>` : '')}
+        <div class="flight-booking">
+          <span class="booking-label">Book this flight on:</span>
+          <div class="booking-links">
+            <a href="${bookUrls.google}" target="_blank" rel="noopener" class="booking-link google">Google Flights</a>
+            <a href="${bookUrls.skyscanner}" target="_blank" rel="noopener" class="booking-link skyscanner">Skyscanner</a>
+            <a href="${bookUrls.kayak}" target="_blank" rel="noopener" class="booking-link kayak">Kayak</a>
+            <a href="${bookUrls.trip}" target="_blank" rel="noopener" class="booking-link trip">Trip.com</a>
+          </div>
+        </div>
+      </div>
     </div>`;
   }).join('') + `<div style="display:flex;gap:8px;justify-content:flex-end;padding:8px 0;">
     <button class="btn-text" onclick="watchRoute('${escapeHtml(origin)}','${escapeHtml(dest)}','${escapeHtml(date)}')">Watch this route</button>
     <button class="btn-text" onclick="openRouteIntel('${escapeHtml(origin)}','${escapeHtml(dest)}')">Route Intel</button>
   </div>`;
+}
+
+function toggleFlightDetail(idx) {
+  const detail = document.getElementById(`flight-detail-${idx}`);
+  if (!detail) return;
+  const card = detail.closest('.flight-result-card');
+  const isOpen = detail.classList.contains('open');
+  // Close all others
+  document.querySelectorAll('.flight-detail.open').forEach(d => { d.classList.remove('open'); d.closest('.flight-result-card')?.classList.remove('expanded'); });
+  if (!isOpen) {
+    detail.classList.add('open');
+    card?.classList.add('expanded');
+  }
 }
 
 function showDealRecommendation(flights, origin, destination) {
@@ -1217,8 +1305,29 @@ function setDestCode(code) {
   const hidden = document.getElementById('destSelect');
   const input = document.getElementById('flightTo');
   if (hidden) hidden.value = code;
+  const airport = AIRPORTS.find(a => a.code === code.toUpperCase());
   if (input) {
-    const airport = AIRPORTS.find(a => a.code === code.toUpperCase());
     input.value = airport ? `${airport.city} (${airport.code})` : code;
+  }
+  // Update recommended deals subtitle
+  const origin = document.getElementById('originSelect')?.value || 'HKG';
+  const originAirport = AIRPORTS.find(a => a.code === origin);
+  const subtitle = document.getElementById('recommendedSubtitle');
+  if (subtitle && airport) {
+    subtitle.innerHTML = `Flights from <strong>${originAirport?.city || origin}</strong> to <strong>${airport.city}</strong>`;
+  }
+  // Focus globe on destination
+  if (airport && globeInstance) {
+    globeInstance.pointOfView({ lat: airport.lat, lng: airport.lon, altitude: 2.0 }, 1000);
+    // Draw arc from origin to destination
+    const originData = AIRPORTS.find(a => a.code === origin);
+    if (originData) {
+      const arcs = [{
+        startLat: originData.lat, startLng: originData.lon,
+        endLat: airport.lat, endLng: airport.lon,
+        color: ['rgba(0,212,170,0.8)', 'rgba(0,212,170,0.2)'],
+      }];
+      globeInstance.arcsData(arcs);
+    }
   }
 }

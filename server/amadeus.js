@@ -110,10 +110,25 @@ amadeusRouter.post('/flights', async (req, res) => {
         currency: offer.price?.currency || currency,
         total_amount: offer.price?.grandTotal || offer.price?.total || '0',
         cabin_class: cabinClass.toLowerCase(),
-        // Extra Amadeus data
         bookable: offer.instantTicketingRequired !== true,
         lastTicketDate: offer.lastTicketingDate,
-        segments: seg.length,
+        segments: seg.map(s => {
+          const segDur = s.duration || '';
+          const segDurMatch = segDur.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
+          const segDurStr = segDurMatch ? `${segDurMatch[1] || 0}h ${segDurMatch[2] || 0}m` : segDur;
+          return {
+            carrier: s.carrierCode || '',
+            flightNumber: `${s.carrierCode || ''}${s.number || ''}`,
+            from: s.departure?.iataCode || '',
+            fromTerminal: s.departure?.terminal || '',
+            departAt: s.departure?.at || '',
+            to: s.arrival?.iataCode || '',
+            toTerminal: s.arrival?.terminal || '',
+            arriveAt: s.arrival?.at || '',
+            duration: segDurStr,
+            aircraft: s.aircraft?.code || '',
+          };
+        }),
       };
     });
 

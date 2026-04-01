@@ -4,3 +4,4 @@ node_modules/
 data/google-tokens.json
 data/mindforce.db
 .claude/
+.vercel
