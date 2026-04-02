@@ -48,5 +48,12 @@
   "W6": { "carryOn": "10kg, 55x40x20cm (paid)", "checked": "Not included", "extraBag": "$25-55" },
   "5J": { "carryOn": "7kg, 56x36x23cm", "checked": "Not included", "extraBag": "$15-35" },
   "AK": { "carryOn": "7kg, 56x36x23cm", "checked": "Not included", "extraBag": "$15-40" },
-  "HX": { "carryOn": "7kg, 56x36x23cm", "checked": "30kg included", "extraBag": "$50" }
+  "HX": { "carryOn": "7kg, 56x36x23cm", "checked": "30kg included", "extraBag": "$50" },
+  "CA": { "carryOn": "5kg, 55x40x20cm", "checked": "23kg included", "extraBag": "$50" },
+  "MU": { "carryOn": "5kg, 55x40x20cm", "checked": "23kg included", "extraBag": "$50" },
+  "CZ": { "carryOn": "5kg, 55x40x20cm", "checked": "23kg included", "extraBag": "$45" },
+  "NK": { "carryOn": "No free carry-on, 45x35x20cm personal item", "checked": "Not included", "extraBag": "$30-65" },
+  "F9": { "carryOn": "No free carry-on, 45x35x20cm personal item", "checked": "Not included", "extraBag": "$30-60" },
+  "DY": { "carryOn": "10kg, 55x40x23cm", "checked": "Not included", "extraBag": "$30-70" },
+  "TR": { "carryOn": "10kg, 54x38x23cm", "checked": "Not included", "extraBag": "$20-50" }
 }

@@ -401,11 +401,22 @@ app.get('/api/price-grid', (req, res) => {
   }
 });
 
-// ===== City Costs (uses cached data) =====
+// ===== City Costs (uses cached data, P2 Fix #20: filter by ?city= param) =====
 app.get('/api/city-costs', (req, res) => {
   try {
     const data = DATA_CACHE['city-costs.json'];
     if (!data) return res.status(404).json({ error: 'City costs data not available' });
+    const { city } = req.query;
+    if (city) {
+      // Case-insensitive city lookup
+      let costs = data[city];
+      if (!costs) {
+        const key = Object.keys(data).find(k => k.toLowerCase() === city.toLowerCase());
+        costs = key ? data[key] : null;
+      }
+      if (!costs) return res.status(404).json({ error: 'City not found' });
+      return res.json({ city, ...costs });
+    }
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });

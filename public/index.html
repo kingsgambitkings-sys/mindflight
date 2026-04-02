@@ -22,7 +22,7 @@
   <meta name="twitter:description" content="Search routes, track prices, and discover flight deals with an interactive 3D globe.">
   <meta name="twitter:image" content="https://mindforce-eight.vercel.app/icons/icon-512.png">
 
-  <!-- Structured Data JSON-LD (Fix #33) -->
+  <!-- Structured Data JSON-LD (Fix #33 + P2 Fix #23: FlightSearch schema) -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -36,6 +36,26 @@
       "@type": "Offer",
       "price": "0",
       "priceCurrency": "USD"
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "MindFlight",
+    "url": "https://mindforce-eight.vercel.app/",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "https://mindforce-eight.vercel.app/?origin={origin}&destination={destination}&date={date}"
+      },
+      "query-input": [
+        { "@type": "PropertyValueSpecification", "valueName": "origin", "valueRequired": true },
+        { "@type": "PropertyValueSpecification", "valueName": "destination", "valueRequired": true },
+        { "@type": "PropertyValueSpecification", "valueName": "date", "valueRequired": false }
+      ]
     }
   }
   </script>
@@ -174,8 +194,8 @@
 
         <!-- Value proposition headline overlay -->
         <div class="globe-headline" id="globeHeadline">
-          <h1>Find the cheapest flights, visually.</h1>
-          <p>Search routes, track prices, and discover deals.</p>
+          <h1>Your next adventure starts here.</h1>
+          <p>Explore the globe, compare prices, and fly for less.</p>
         </div>
 
         <!-- Scroll-down indicator -->
@@ -228,10 +248,16 @@
           <!-- Flight options row -->
           <div class="gsb-options">
             <label class="gsb-toggle"><input type="checkbox" id="roundTrip"> Round trip</label>
-            <label class="gsb-toggle"><input type="checkbox" id="nearbyToggle"> Include nearby airports</label>
             <div class="gsb-field gsb-return" id="returnDateField" style="display:none;">
               <input type="date" id="flightReturnDate" class="gsb-input gsb-input-sm">
             </div>
+            <button class="gsb-more-toggle" id="moreOptionsToggle" type="button" aria-expanded="false" aria-controls="moreOptionsPanel">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+              <span>More options</span>
+            </button>
+          </div>
+          <div class="gsb-more-options" id="moreOptionsPanel" style="display:none;">
+            <label class="gsb-toggle"><input type="checkbox" id="nearbyToggle"> Include nearby airports</label>
             <select id="cabinClass" class="gsb-select">
               <option value="economy">Economy</option>
               <option value="premium_economy">Premium Economy</option>
@@ -686,6 +712,40 @@
         <button class="modal-close">&times;</button>
       </div>
       <div class="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- ===== FIRST-RUN ORIGIN PICKER MODAL ===== -->
+  <div class="modal-overlay" id="originPickerModal" role="dialog" aria-label="Set your home airport">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Welcome to MindFlight</h2>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:14px;color:var(--text-secondary);margin-bottom:16px;">Set your home airport to get personalized flight deals and prices.</p>
+        <div class="form-group">
+          <label for="originPickerInput">Your Home Airport</label>
+          <div class="airport-autocomplete">
+            <input type="text" id="originPickerInput" class="gsb-input" placeholder="Type city or airport code..." autocomplete="off" style="width:100%;background:var(--bg-elevated);border:1px solid var(--border);padding:12px 14px;font-size:14px;">
+            <div class="airport-dropdown" id="originPickerDropdown"></div>
+          </div>
+          <input type="hidden" id="originPickerSelect" value="">
+        </div>
+        <div class="form-group">
+          <label for="originPickerCurrency">Preferred Currency</label>
+          <select id="originPickerCurrency" style="width:100%;padding:10px 14px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:13px;">
+            <option value="GBP">GBP - British Pound</option>
+            <option value="USD">USD - US Dollar</option>
+            <option value="EUR">EUR - Euro</option>
+            <option value="HKD">HKD - Hong Kong Dollar</option>
+            <option value="SGD">SGD - Singapore Dollar</option>
+            <option value="JPY">JPY - Japanese Yen</option>
+            <option value="AUD">AUD - Australian Dollar</option>
+            <option value="CNY">CNY - Chinese Yuan</option>
+          </select>
+        </div>
+        <button class="btn-primary full-width" id="originPickerSave">Get Started</button>
+      </div>
     </div>
   </div>
 

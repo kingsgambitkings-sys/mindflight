@@ -58,5 +58,11 @@
   "5J": { "name": "Cebu Pacific", "onTime": 68, "rating": 3.0, "fleetAge": 7.1, "legroom": 29, "food": 2.0 },
   "AK": { "name": "AirAsia", "onTime": 73, "rating": 3.1, "fleetAge": 6.5, "legroom": 29, "food": 2.5 },
   "TR": { "name": "Scoot", "onTime": 72, "rating": 3.0, "fleetAge": 5.8, "legroom": 29, "food": 2.3 },
-  "HX": { "name": "Hong Kong Airlines", "onTime": 73, "rating": 3.4, "fleetAge": 8.2, "legroom": 31, "food": 3.2 }
+  "HX": { "name": "Hong Kong Airlines", "onTime": 73, "rating": 3.4, "fleetAge": 8.2, "legroom": 31, "food": 3.2 },
+  "CA": { "name": "Air China", "onTime": 70, "rating": 3.4, "fleetAge": 8.6, "legroom": 31, "food": 3.3 },
+  "MU": { "name": "China Eastern Airlines", "onTime": 68, "rating": 3.3, "fleetAge": 7.8, "legroom": 31, "food": 3.2 },
+  "CZ": { "name": "China Southern Airlines", "onTime": 72, "rating": 3.5, "fleetAge": 7.2, "legroom": 31, "food": 3.4 },
+  "NK": { "name": "Spirit Airlines", "onTime": 70, "rating": 2.5, "fleetAge": 6.8, "legroom": 28, "food": 1.5 },
+  "F9": { "name": "Frontier Airlines", "onTime": 72, "rating": 2.6, "fleetAge": 5.3, "legroom": 28, "food": 1.5 },
+  "DY": { "name": "Norwegian Air Shuttle", "onTime": 75, "rating": 3.3, "fleetAge": 6.1, "legroom": 31, "food": 2.5 }
 }

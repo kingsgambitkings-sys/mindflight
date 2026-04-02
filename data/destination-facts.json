@@ -1,7 +1,7 @@
 {
   "Tokyo": { "currency": "JPY", "language": "Japanese", "plugType": "A/B", "voltage": "100V", "tipping": "No", "emergency": "110", "drivingSide": "left", "tapWater": "safe", "simCost": "$3-5/day" },
   "Osaka": { "currency": "JPY", "language": "Japanese", "plugType": "A/B", "voltage": "100V", "tipping": "No", "emergency": "110", "drivingSide": "left", "tapWater": "safe", "simCost": "$3-5/day" },
-  "Hong Kong": { "currency": "HKD", "language": "Cantonese/English", "plugType": "G", "voltage": "220V", "tipping": "10% at restaurants", "emergency": "999", "drivingSide": "left", "tapWater": "boil first", "simCost": "$2-4/day" },
+  "Hong Kong": { "currency": "HKD", "language": "Cantonese/English", "plugType": "G", "voltage": "220V", "tipping": "10% at restaurants", "emergency": "999", "drivingSide": "left", "tapWater": "safe", "simCost": "$2-4/day" },
   "Singapore": { "currency": "SGD", "language": "English/Mandarin/Malay/Tamil", "plugType": "G", "voltage": "230V", "tipping": "No", "emergency": "999", "drivingSide": "left", "tapWater": "safe", "simCost": "$3-5/day" },
   "Bangkok": { "currency": "THB", "language": "Thai", "plugType": "A/B/C", "voltage": "220V", "tipping": "Optional, round up", "emergency": "191", "drivingSide": "left", "tapWater": "not safe", "simCost": "$1-3/day" },
   "Seoul": { "currency": "KRW", "language": "Korean", "plugType": "C/F", "voltage": "220V", "tipping": "No", "emergency": "112", "drivingSide": "right", "tapWater": "safe", "simCost": "$3-5/day" },

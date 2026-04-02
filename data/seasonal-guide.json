@@ -574,5 +574,341 @@
       { "month": "Nov", "season": "shoulder", "avgTemp": 14, "rainfall": 76, "events": [], "note": "Rain returning, still pleasant" },
       { "month": "Dec", "season": "off", "avgTemp": 11, "rainfall": 113, "events": ["Christmas"], "note": "Cool, rainy, festive" }
     ]
+  },
+  "Shanghai": {
+    "months": [
+      { "month": "Jan", "season": "off", "avgTemp": 4, "rainfall": 49, "events": ["Chinese New Year prep"], "note": "Cold, damp, fewer tourists" },
+      { "month": "Feb", "season": "shoulder", "avgTemp": 5, "rainfall": 59, "events": ["Chinese New Year", "Lantern Festival"], "note": "Cold, CNY celebrations" },
+      { "month": "Mar", "season": "shoulder", "avgTemp": 10, "rainfall": 84, "events": [], "note": "Spring starting, cherry blossoms" },
+      { "month": "Apr", "season": "peak", "avgTemp": 16, "rainfall": 76, "events": [], "note": "Warm, comfortable, flowers blooming" },
+      { "month": "May", "season": "peak", "avgTemp": 21, "rainfall": 84, "events": ["Labour Day Holiday"], "note": "Pleasant, Labour Day holiday busy" },
+      { "month": "Jun", "season": "off", "avgTemp": 25, "rainfall": 181, "events": ["Plum rain season"], "note": "Plum rain season, very humid" },
+      { "month": "Jul", "season": "off", "avgTemp": 29, "rainfall": 146, "events": [], "note": "Hot and humid, thunderstorms" },
+      { "month": "Aug", "season": "off", "avgTemp": 28, "rainfall": 134, "events": [], "note": "Hottest, typhoon risk" },
+      { "month": "Sep", "season": "shoulder", "avgTemp": 24, "rainfall": 87, "events": ["Mid-Autumn Festival"], "note": "Cooling, typhoon risk easing" },
+      { "month": "Oct", "season": "peak", "avgTemp": 19, "rainfall": 52, "events": ["National Day Golden Week"], "note": "Best weather, Golden Week very busy" },
+      { "month": "Nov", "season": "peak", "avgTemp": 13, "rainfall": 52, "events": [], "note": "Cool, dry, pleasant autumn" },
+      { "month": "Dec", "season": "off", "avgTemp": 6, "rainfall": 37, "events": ["Christmas"], "note": "Cold, dry, festive decorations" }
+    ]
+  },
+  "Mumbai": {
+    "months": [
+      { "month": "Jan", "season": "peak", "avgTemp": 25, "rainfall": 3, "events": ["Republic Day"], "note": "Dry, comfortable, best time" },
+      { "month": "Feb", "season": "peak", "avgTemp": 26, "rainfall": 3, "events": [], "note": "Warm, dry, ideal weather" },
+      { "month": "Mar", "season": "shoulder", "avgTemp": 28, "rainfall": 2, "events": ["Holi"], "note": "Hot, dry, Holi celebrations" },
+      { "month": "Apr", "season": "shoulder", "avgTemp": 30, "rainfall": 2, "events": [], "note": "Hot, humidity rising" },
+      { "month": "May", "season": "off", "avgTemp": 31, "rainfall": 18, "events": [], "note": "Very hot, pre-monsoon showers" },
+      { "month": "Jun", "season": "off", "avgTemp": 29, "rainfall": 485, "events": [], "note": "Monsoon arrives, very heavy rain" },
+      { "month": "Jul", "season": "off", "avgTemp": 28, "rainfall": 617, "events": [], "note": "Peak monsoon, flooding possible" },
+      { "month": "Aug", "season": "off", "avgTemp": 28, "rainfall": 530, "events": ["Ganesh Chaturthi"], "note": "Heavy rain, Ganesh festival" },
+      { "month": "Sep", "season": "off", "avgTemp": 28, "rainfall": 342, "events": ["Navratri"], "note": "Monsoon easing, still wet" },
+      { "month": "Oct", "season": "shoulder", "avgTemp": 29, "rainfall": 65, "events": ["Diwali"], "note": "Post-monsoon, Diwali celebrations" },
+      { "month": "Nov", "season": "peak", "avgTemp": 28, "rainfall": 14, "events": [], "note": "Dry, pleasant, tourist season" },
+      { "month": "Dec", "season": "peak", "avgTemp": 26, "rainfall": 3, "events": ["Christmas"], "note": "Cool, dry, festive atmosphere" }
+    ]
+  },
+  "Delhi": {
+    "months": [
+      { "month": "Jan", "season": "shoulder", "avgTemp": 14, "rainfall": 19, "events": ["Republic Day"], "note": "Cold, foggy mornings, Republic Day parade" },
+      { "month": "Feb", "season": "shoulder", "avgTemp": 17, "rainfall": 18, "events": [], "note": "Cool, warming up, less fog" },
+      { "month": "Mar", "season": "peak", "avgTemp": 23, "rainfall": 13, "events": ["Holi"], "note": "Pleasant, Holi festival of colors" },
+      { "month": "Apr", "season": "shoulder", "avgTemp": 30, "rainfall": 7, "events": [], "note": "Getting hot, dry" },
+      { "month": "May", "season": "off", "avgTemp": 35, "rainfall": 13, "events": [], "note": "Extremely hot, dust storms" },
+      { "month": "Jun", "season": "off", "avgTemp": 35, "rainfall": 74, "events": [], "note": "Pre-monsoon heat, very hot" },
+      { "month": "Jul", "season": "off", "avgTemp": 31, "rainfall": 211, "events": [], "note": "Monsoon arrives, heavy rain, relief from heat" },
+      { "month": "Aug", "season": "off", "avgTemp": 30, "rainfall": 233, "events": ["Independence Day"], "note": "Monsoon peak, humid" },
+      { "month": "Sep", "season": "off", "avgTemp": 29, "rainfall": 150, "events": [], "note": "Monsoon retreating, still humid" },
+      { "month": "Oct", "season": "peak", "avgTemp": 26, "rainfall": 14, "events": ["Dussehra", "Diwali"], "note": "Post-monsoon, festivals, perfect weather" },
+      { "month": "Nov", "season": "peak", "avgTemp": 20, "rainfall": 3, "events": [], "note": "Cool, clear, smog increasing" },
+      { "month": "Dec", "season": "shoulder", "avgTemp": 15, "rainfall": 10, "events": ["Christmas"], "note": "Cold, foggy, festive" }
+    ]
+  },
+  "Melbourne": {
+    "months": [
+      { "month": "Jan", "season": "peak", "avgTemp": 26, "rainfall": 48, "events": ["Australian Open"], "note": "Peak summer, Australian Open tennis" },
+      { "month": "Feb", "season": "peak", "avgTemp": 26, "rainfall": 48, "events": [], "note": "Warm, busy summer events" },
+      { "month": "Mar", "season": "peak", "avgTemp": 24, "rainfall": 50, "events": ["Moomba Festival", "F1 Grand Prix"], "note": "Autumn starting, F1 Grand Prix" },
+      { "month": "Apr", "season": "shoulder", "avgTemp": 20, "rainfall": 57, "events": ["ANZAC Day"], "note": "Autumn colors, pleasant" },
+      { "month": "May", "season": "off", "avgTemp": 17, "rainfall": 56, "events": [], "note": "Cool, rain increasing" },
+      { "month": "Jun", "season": "off", "avgTemp": 14, "rainfall": 49, "events": [], "note": "Winter, cold and rainy" },
+      { "month": "Jul", "season": "off", "avgTemp": 13, "rainfall": 48, "events": [], "note": "Coldest month, good for skiing nearby" },
+      { "month": "Aug", "season": "off", "avgTemp": 14, "rainfall": 50, "events": [], "note": "Cold, dry spells, whale watching" },
+      { "month": "Sep", "season": "shoulder", "avgTemp": 16, "rainfall": 59, "events": ["Melbourne Festival"], "note": "Spring starts, unpredictable weather" },
+      { "month": "Oct", "season": "shoulder", "avgTemp": 19, "rainfall": 67, "events": ["Melbourne Cup prep"], "note": "Spring, warming up" },
+      { "month": "Nov", "season": "shoulder", "avgTemp": 22, "rainfall": 60, "events": ["Melbourne Cup"], "note": "Warm, Melbourne Cup week" },
+      { "month": "Dec", "season": "peak", "avgTemp": 24, "rainfall": 59, "events": ["Christmas", "Boxing Day Test"], "note": "Summer begins, Boxing Day cricket" }
+    ]
+  },
+  "Madrid": {
+    "months": [
+      { "month": "Jan", "season": "off", "avgTemp": 6, "rainfall": 33, "events": ["Three Kings Day"], "note": "Cold, dry, Three Kings parade" },
+      { "month": "Feb", "season": "off", "avgTemp": 8, "rainfall": 35, "events": ["Carnival"], "note": "Cold, carnival celebrations" },
+      { "month": "Mar", "season": "shoulder", "avgTemp": 11, "rainfall": 26, "events": [], "note": "Spring arriving, pleasant" },
+      { "month": "Apr", "season": "peak", "avgTemp": 14, "rainfall": 45, "events": ["Easter", "Semana Santa"], "note": "Mild, Easter processions" },
+      { "month": "May", "season": "peak", "avgTemp": 18, "rainfall": 47, "events": ["San Isidro Festival"], "note": "Warm, San Isidro bullfights" },
+      { "month": "Jun", "season": "peak", "avgTemp": 24, "rainfall": 25, "events": [], "note": "Hot, long days, outdoor terraces" },
+      { "month": "Jul", "season": "off", "avgTemp": 28, "rainfall": 11, "events": [], "note": "Very hot, many locals leave" },
+      { "month": "Aug", "season": "off", "avgTemp": 27, "rainfall": 12, "events": ["La Paloma"], "note": "Peak heat, quiet city" },
+      { "month": "Sep", "season": "peak", "avgTemp": 22, "rainfall": 28, "events": [], "note": "Warm, locals return, lively" },
+      { "month": "Oct", "season": "peak", "avgTemp": 16, "rainfall": 46, "events": [], "note": "Pleasant, autumn colors in Retiro" },
+      { "month": "Nov", "season": "off", "avgTemp": 10, "rainfall": 56, "events": [], "note": "Cool, rainy spells" },
+      { "month": "Dec", "season": "shoulder", "avgTemp": 7, "rainfall": 56, "events": ["Christmas Markets", "New Year"], "note": "Cold, festive lights on Gran Via" }
+    ]
+  },
+  "Frankfurt": {
+    "months": [
+      { "month": "Jan", "season": "off", "avgTemp": 2, "rainfall": 44, "events": [], "note": "Cold, dark, indoor season" },
+      { "month": "Feb", "season": "off", "avgTemp": 3, "rainfall": 38, "events": ["Carnival"], "note": "Cold, carnival parades" },
+      { "month": "Mar", "season": "shoulder", "avgTemp": 7, "rainfall": 47, "events": [], "note": "Spring starting, warming" },
+      { "month": "Apr", "season": "shoulder", "avgTemp": 12, "rainfall": 42, "events": ["Easter"], "note": "Pleasant, cherry blossoms" },
+      { "month": "May", "season": "peak", "avgTemp": 16, "rainfall": 56, "events": [], "note": "Warm, apple wine season" },
+      { "month": "Jun", "season": "peak", "avgTemp": 19, "rainfall": 65, "events": [], "note": "Long days, beer gardens" },
+      { "month": "Jul", "season": "peak", "avgTemp": 22, "rainfall": 59, "events": [], "note": "Warmest, Main river activities" },
+      { "month": "Aug", "season": "peak", "avgTemp": 21, "rainfall": 60, "events": ["Museumsuferfest"], "note": "Warm, museum festival" },
+      { "month": "Sep", "season": "shoulder", "avgTemp": 17, "rainfall": 49, "events": [], "note": "Pleasant, wine harvest" },
+      { "month": "Oct", "season": "shoulder", "avgTemp": 11, "rainfall": 53, "events": ["Frankfurt Book Fair"], "note": "Cool, world-famous book fair" },
+      { "month": "Nov", "season": "off", "avgTemp": 6, "rainfall": 53, "events": [], "note": "Cold, dark, quiet" },
+      { "month": "Dec", "season": "shoulder", "avgTemp": 3, "rainfall": 51, "events": ["Christmas Markets"], "note": "Cold, famous Christmas market" }
+    ]
+  },
+  "Milan": {
+    "months": [
+      { "month": "Jan", "season": "off", "avgTemp": 3, "rainfall": 64, "events": ["Winter Sales"], "note": "Cold, foggy, designer sales" },
+      { "month": "Feb", "season": "off", "avgTemp": 5, "rainfall": 63, "events": ["Milan Fashion Week"], "note": "Cold, Fashion Week excitement" },
+      { "month": "Mar", "season": "shoulder", "avgTemp": 10, "rainfall": 82, "events": [], "note": "Spring emerging, parks blooming" },
+      { "month": "Apr", "season": "peak", "avgTemp": 14, "rainfall": 82, "events": ["Salone del Mobile", "Easter"], "note": "Design week, Furniture Fair" },
+      { "month": "May", "season": "peak", "avgTemp": 19, "rainfall": 97, "events": [], "note": "Warm, rooftop season" },
+      { "month": "Jun", "season": "peak", "avgTemp": 23, "rainfall": 65, "events": [], "note": "Hot, aperitivo season" },
+      { "month": "Jul", "season": "off", "avgTemp": 26, "rainfall": 68, "events": [], "note": "Very hot, locals leave" },
+      { "month": "Aug", "season": "off", "avgTemp": 25, "rainfall": 93, "events": ["Ferragosto"], "note": "Hot, many shops closed" },
+      { "month": "Sep", "season": "peak", "avgTemp": 21, "rainfall": 69, "events": ["Milan Fashion Week"], "note": "Fashion Week, pleasant weather" },
+      { "month": "Oct", "season": "shoulder", "avgTemp": 15, "rainfall": 100, "events": [], "note": "Cool, autumn colors, fog returns" },
+      { "month": "Nov", "season": "off", "avgTemp": 9, "rainfall": 101, "events": [], "note": "Cool, foggy, quiet" },
+      { "month": "Dec", "season": "shoulder", "avgTemp": 4, "rainfall": 60, "events": ["La Scala opening", "Christmas"], "note": "Cold, opera season, Christmas" }
+    ]
+  },
+  "Stockholm": {
+    "months": [
+      { "month": "Jan", "season": "off", "avgTemp": -1, "rainfall": 39, "events": [], "note": "Dark, cold, cozy indoor season" },
+      { "month": "Feb", "season": "off", "avgTemp": -1, "rainfall": 27, "events": [], "note": "Cold, days lengthening slowly" },
+      { "month": "Mar", "season": "shoulder", "avgTemp": 2, "rainfall": 26, "events": [], "note": "Spring hints, snow melting" },
+      { "month": "Apr", "season": "shoulder", "avgTemp": 7, "rainfall": 30, "events": ["Easter"], "note": "Spring arriving, parks opening" },
+      { "month": "May", "season": "peak", "avgTemp": 12, "rainfall": 30, "events": [], "note": "Warm, long days, beautiful" },
+      { "month": "Jun", "season": "peak", "avgTemp": 17, "rainfall": 45, "events": ["Midsummer"], "note": "Almost 24h daylight, Midsummer" },
+      { "month": "Jul", "season": "peak", "avgTemp": 20, "rainfall": 72, "events": [], "note": "Warmest, archipelago season" },
+      { "month": "Aug", "season": "peak", "avgTemp": 19, "rainfall": 66, "events": [], "note": "Warm, outdoor swimming" },
+      { "month": "Sep", "season": "shoulder", "avgTemp": 14, "rainfall": 55, "events": [], "note": "Autumn colors, pleasant" },
+      { "month": "Oct", "season": "off", "avgTemp": 8, "rainfall": 50, "events": [], "note": "Cool, dark increasing" },
+      { "month": "Nov", "season": "off", "avgTemp": 4, "rainfall": 53, "events": [], "note": "Cold, dark, Christmas lights start" },
+      { "month": "Dec", "season": "shoulder", "avgTemp": 1, "rainfall": 46, "events": ["Christmas Markets", "Lucia"], "note": "Cold, dark, Lucia celebrations" }
+    ]
+  },
+  "Helsinki": {
+    "months": [
+      { "month": "Jan", "season": "off", "avgTemp": -4, "rainfall": 36, "events": [], "note": "Very cold, dark, sauna season" },
+      { "month": "Feb", "season": "off", "avgTemp": -5, "rainfall": 26, "events": [], "note": "Coldest, but days getting longer" },
+      { "month": "Mar", "season": "shoulder", "avgTemp": -1, "rainfall": 30, "events": [], "note": "Late winter, spring skiing" },
+      { "month": "Apr", "season": "shoulder", "avgTemp": 4, "rainfall": 32, "events": ["Easter"], "note": "Snow melting, spring arriving" },
+      { "month": "May", "season": "peak", "avgTemp": 11, "rainfall": 36, "events": ["Vappu (May Day)"], "note": "Warm, Vappu celebrations, parks" },
+      { "month": "Jun", "season": "peak", "avgTemp": 16, "rainfall": 57, "events": ["Midsummer"], "note": "White nights, almost no darkness" },
+      { "month": "Jul", "season": "peak", "avgTemp": 19, "rainfall": 63, "events": [], "note": "Warmest, island hopping" },
+      { "month": "Aug", "season": "peak", "avgTemp": 17, "rainfall": 80, "events": ["Helsinki Festival"], "note": "Warm, cultural festivals" },
+      { "month": "Sep", "season": "shoulder", "avgTemp": 12, "rainfall": 56, "events": [], "note": "Autumn colors, pleasant" },
+      { "month": "Oct", "season": "off", "avgTemp": 6, "rainfall": 65, "events": [], "note": "Cool, dark increasing rapidly" },
+      { "month": "Nov", "season": "off", "avgTemp": 1, "rainfall": 57, "events": [], "note": "Cold, dark, Christmas markets" },
+      { "month": "Dec", "season": "shoulder", "avgTemp": -2, "rainfall": 44, "events": ["Christmas", "Independence Day"], "note": "Cold, dark, magical Christmas" }
+    ]
+  },
+  "Oslo": {
+    "months": [
+      { "month": "Jan", "season": "off", "avgTemp": -3, "rainfall": 49, "events": [], "note": "Cold, dark, skiing season" },
+      { "month": "Feb", "season": "off", "avgTemp": -2, "rainfall": 35, "events": [], "note": "Cold, good cross-country skiing" },
+      { "month": "Mar", "season": "shoulder", "avgTemp": 1, "rainfall": 47, "events": ["Holmenkollen Ski Festival"], "note": "Late winter, ski festival" },
+      { "month": "Apr", "season": "shoulder", "avgTemp": 6, "rainfall": 41, "events": ["Easter"], "note": "Spring arriving, snow melting" },
+      { "month": "May", "season": "peak", "avgTemp": 12, "rainfall": 53, "events": ["Constitution Day (17th May)"], "note": "Warm, Constitution Day celebrations" },
+      { "month": "Jun", "season": "peak", "avgTemp": 16, "rainfall": 65, "events": ["Midsummer"], "note": "Long days, midnight sun" },
+      { "month": "Jul", "season": "peak", "avgTemp": 18, "rainfall": 81, "events": [], "note": "Warmest, fjord cruises" },
+      { "month": "Aug", "season": "peak", "avgTemp": 17, "rainfall": 89, "events": [], "note": "Warm, outdoor season" },
+      { "month": "Sep", "season": "shoulder", "avgTemp": 12, "rainfall": 81, "events": [], "note": "Cool, autumn colors" },
+      { "month": "Oct", "season": "off", "avgTemp": 7, "rainfall": 84, "events": [], "note": "Cool, dark increasing" },
+      { "month": "Nov", "season": "off", "avgTemp": 2, "rainfall": 73, "events": [], "note": "Cold, dark, Christmas markets" },
+      { "month": "Dec", "season": "shoulder", "avgTemp": -1, "rainfall": 47, "events": ["Christmas Markets"], "note": "Cold, dark, festive atmosphere" }
+    ]
+  },
+  "Warsaw": {
+    "months": [
+      { "month": "Jan", "season": "off", "avgTemp": -1, "rainfall": 27, "events": [], "note": "Cold, snowy, quiet" },
+      { "month": "Feb", "season": "off", "avgTemp": 0, "rainfall": 26, "events": [], "note": "Cold, few tourists" },
+      { "month": "Mar", "season": "shoulder", "avgTemp": 4, "rainfall": 28, "events": [], "note": "Spring starting" },
+      { "month": "Apr", "season": "shoulder", "avgTemp": 10, "rainfall": 37, "events": ["Easter"], "note": "Pleasant, parks blooming" },
+      { "month": "May", "season": "peak", "avgTemp": 15, "rainfall": 58, "events": [], "note": "Warm, green, outdoor season" },
+      { "month": "Jun", "season": "peak", "avgTemp": 18, "rainfall": 73, "events": [], "note": "Long days, warm" },
+      { "month": "Jul", "season": "peak", "avgTemp": 20, "rainfall": 73, "events": [], "note": "Warmest, festivals" },
+      { "month": "Aug", "season": "peak", "avgTemp": 19, "rainfall": 60, "events": [], "note": "Warm, outdoor events" },
+      { "month": "Sep", "season": "shoulder", "avgTemp": 14, "rainfall": 45, "events": [], "note": "Cool, autumn colors" },
+      { "month": "Oct", "season": "shoulder", "avgTemp": 9, "rainfall": 34, "events": [], "note": "Cool, beautiful autumn" },
+      { "month": "Nov", "season": "off", "avgTemp": 4, "rainfall": 34, "events": [], "note": "Cold, dark" },
+      { "month": "Dec", "season": "shoulder", "avgTemp": 1, "rainfall": 31, "events": ["Christmas Markets"], "note": "Cold, festive Christmas markets" }
+    ]
+  },
+  "Dublin": {
+    "months": [
+      { "month": "Jan", "season": "off", "avgTemp": 5, "rainfall": 69, "events": [], "note": "Cold, rainy, quiet" },
+      { "month": "Feb", "season": "off", "avgTemp": 5, "rainfall": 50, "events": [], "note": "Cold, fewer tourists" },
+      { "month": "Mar", "season": "shoulder", "avgTemp": 7, "rainfall": 53, "events": ["St Patrick's Day"], "note": "St Patrick's Day celebrations" },
+      { "month": "Apr", "season": "shoulder", "avgTemp": 9, "rainfall": 51, "events": ["Easter"], "note": "Spring, days getting longer" },
+      { "month": "May", "season": "peak", "avgTemp": 12, "rainfall": 55, "events": [], "note": "Mild, long days" },
+      { "month": "Jun", "season": "peak", "avgTemp": 15, "rainfall": 56, "events": ["Bloomsday"], "note": "Warm, long evenings, Bloomsday" },
+      { "month": "Jul", "season": "peak", "avgTemp": 17, "rainfall": 51, "events": [], "note": "Warmest, outdoor activities" },
+      { "month": "Aug", "season": "peak", "avgTemp": 17, "rainfall": 70, "events": [], "note": "Warm, festivals" },
+      { "month": "Sep", "season": "shoulder", "avgTemp": 14, "rainfall": 57, "events": ["Dublin Fringe Festival"], "note": "Mild, cultural events" },
+      { "month": "Oct", "season": "shoulder", "avgTemp": 11, "rainfall": 70, "events": [], "note": "Autumn, rainy" },
+      { "month": "Nov", "season": "off", "avgTemp": 7, "rainfall": 65, "events": [], "note": "Dark, rainy" },
+      { "month": "Dec", "season": "shoulder", "avgTemp": 5, "rainfall": 76, "events": ["Christmas"], "note": "Cold, festive pubs and markets" }
+    ]
+  },
+  "Edinburgh": {
+    "months": [
+      { "month": "Jan", "season": "off", "avgTemp": 4, "rainfall": 57, "events": ["Hogmanay aftermath"], "note": "Cold, dark, post-Hogmanay" },
+      { "month": "Feb", "season": "off", "avgTemp": 4, "rainfall": 42, "events": [], "note": "Cold, few tourists" },
+      { "month": "Mar", "season": "shoulder", "avgTemp": 6, "rainfall": 51, "events": [], "note": "Spring emerging" },
+      { "month": "Apr", "season": "shoulder", "avgTemp": 8, "rainfall": 41, "events": [], "note": "Mild, daffodils" },
+      { "month": "May", "season": "peak", "avgTemp": 11, "rainfall": 49, "events": [], "note": "Pleasant, long days" },
+      { "month": "Jun", "season": "peak", "avgTemp": 14, "rainfall": 47, "events": [], "note": "Warm, very long days" },
+      { "month": "Jul", "season": "peak", "avgTemp": 16, "rainfall": 57, "events": [], "note": "Warmest, pre-festival buzz" },
+      { "month": "Aug", "season": "peak", "avgTemp": 16, "rainfall": 65, "events": ["Edinburgh Festival Fringe", "Military Tattoo"], "note": "Festival month, world-famous Fringe" },
+      { "month": "Sep", "season": "shoulder", "avgTemp": 14, "rainfall": 61, "events": [], "note": "Post-festival, still pleasant" },
+      { "month": "Oct", "season": "shoulder", "avgTemp": 10, "rainfall": 65, "events": [], "note": "Cool, autumn colors" },
+      { "month": "Nov", "season": "off", "avgTemp": 7, "rainfall": 63, "events": ["St Andrew's Day"], "note": "Cold, dark, Christmas markets" },
+      { "month": "Dec", "season": "shoulder", "avgTemp": 5, "rainfall": 57, "events": ["Hogmanay"], "note": "Cold, famous New Year celebrations" }
+    ]
+  },
+  "Brussels": {
+    "months": [
+      { "month": "Jan", "season": "off", "avgTemp": 3, "rainfall": 72, "events": [], "note": "Cold, rainy, museum season" },
+      { "month": "Feb", "season": "off", "avgTemp": 4, "rainfall": 55, "events": ["Carnival"], "note": "Cold, chocolate season" },
+      { "month": "Mar", "season": "shoulder", "avgTemp": 7, "rainfall": 62, "events": [], "note": "Spring starting" },
+      { "month": "Apr", "season": "shoulder", "avgTemp": 10, "rainfall": 51, "events": ["Easter", "Flower Carpet (biennial)"], "note": "Mild, parks blooming" },
+      { "month": "May", "season": "peak", "avgTemp": 14, "rainfall": 62, "events": [], "note": "Pleasant, outdoor terraces" },
+      { "month": "Jun", "season": "peak", "avgTemp": 17, "rainfall": 71, "events": [], "note": "Warm, long days" },
+      { "month": "Jul", "season": "peak", "avgTemp": 19, "rainfall": 73, "events": ["Belgian National Day"], "note": "Warmest, National Day celebrations" },
+      { "month": "Aug", "season": "peak", "avgTemp": 19, "rainfall": 79, "events": [], "note": "Warm, many events" },
+      { "month": "Sep", "season": "shoulder", "avgTemp": 16, "rainfall": 63, "events": [], "note": "Mild, fewer crowds" },
+      { "month": "Oct", "season": "shoulder", "avgTemp": 11, "rainfall": 70, "events": [], "note": "Cool, autumn colors" },
+      { "month": "Nov", "season": "off", "avgTemp": 7, "rainfall": 72, "events": [], "note": "Cold, dark" },
+      { "month": "Dec", "season": "shoulder", "avgTemp": 4, "rainfall": 72, "events": ["Christmas Markets"], "note": "Cold, festive Christmas markets" }
+    ]
+  },
+  "Moscow": {
+    "months": [
+      { "month": "Jan", "season": "off", "avgTemp": -8, "rainfall": 42, "events": ["Orthodox Christmas"], "note": "Very cold, snowy, magical" },
+      { "month": "Feb", "season": "off", "avgTemp": -7, "rainfall": 36, "events": ["Maslenitsa"], "note": "Cold, pancake festival" },
+      { "month": "Mar", "season": "shoulder", "avgTemp": -1, "rainfall": 34, "events": [], "note": "Snow melting, spring hints" },
+      { "month": "Apr", "season": "shoulder", "avgTemp": 8, "rainfall": 37, "events": [], "note": "Spring arriving, muddy" },
+      { "month": "May", "season": "peak", "avgTemp": 15, "rainfall": 53, "events": ["Victory Day"], "note": "Warm, green, Victory Day parade" },
+      { "month": "Jun", "season": "peak", "avgTemp": 19, "rainfall": 75, "events": ["White Nights"], "note": "Warm, long days, White Nights" },
+      { "month": "Jul", "season": "peak", "avgTemp": 21, "rainfall": 85, "events": [], "note": "Warmest, parks and river" },
+      { "month": "Aug", "season": "peak", "avgTemp": 19, "rainfall": 77, "events": [], "note": "Warm, fewer locals" },
+      { "month": "Sep", "season": "shoulder", "avgTemp": 13, "rainfall": 58, "events": [], "note": "Golden autumn, beautiful" },
+      { "month": "Oct", "season": "off", "avgTemp": 6, "rainfall": 51, "events": [], "note": "Cool, dark increasing" },
+      { "month": "Nov", "season": "off", "avgTemp": 0, "rainfall": 46, "events": [], "note": "Cold, first snow" },
+      { "month": "Dec", "season": "off", "avgTemp": -5, "rainfall": 46, "events": ["New Year celebrations"], "note": "Very cold, snowy, festive" }
+    ]
+  },
+  "Toronto": {
+    "months": [
+      { "month": "Jan", "season": "off", "avgTemp": -4, "rainfall": 52, "events": [], "note": "Very cold, snowy, PATH underground" },
+      { "month": "Feb", "season": "off", "avgTemp": -3, "rainfall": 47, "events": [], "note": "Cold, Winterlicious restaurant fest" },
+      { "month": "Mar", "season": "shoulder", "avgTemp": 2, "rainfall": 53, "events": [], "note": "Warming slowly, still cold" },
+      { "month": "Apr", "season": "shoulder", "avgTemp": 8, "rainfall": 68, "events": [], "note": "Spring arriving, cherry blossoms" },
+      { "month": "May", "season": "peak", "avgTemp": 15, "rainfall": 74, "events": [], "note": "Warm, patios opening" },
+      { "month": "Jun", "season": "peak", "avgTemp": 21, "rainfall": 71, "events": ["Pride Month"], "note": "Warm, festivals, waterfront" },
+      { "month": "Jul", "season": "peak", "avgTemp": 24, "rainfall": 64, "events": ["Canada Day"], "note": "Hot, beach weather, Canada Day" },
+      { "month": "Aug", "season": "peak", "avgTemp": 23, "rainfall": 81, "events": ["CNE Exhibition"], "note": "Hot, Caribbean Carnival, CNE" },
+      { "month": "Sep", "season": "peak", "avgTemp": 19, "rainfall": 75, "events": ["TIFF"], "note": "Warm, Toronto Film Festival" },
+      { "month": "Oct", "season": "shoulder", "avgTemp": 12, "rainfall": 61, "events": ["Nuit Blanche"], "note": "Autumn colors, pleasant" },
+      { "month": "Nov", "season": "off", "avgTemp": 5, "rainfall": 74, "events": [], "note": "Cold, grey, holiday markets start" },
+      { "month": "Dec", "season": "off", "avgTemp": -1, "rainfall": 61, "events": ["Christmas"], "note": "Cold, snowy, festive" }
+    ]
+  },
+  "Johannesburg": {
+    "months": [
+      { "month": "Jan", "season": "shoulder", "avgTemp": 21, "rainfall": 125, "events": [], "note": "Summer, afternoon thunderstorms" },
+      { "month": "Feb", "season": "shoulder", "avgTemp": 20, "rainfall": 90, "events": [], "note": "Wet, green, warm" },
+      { "month": "Mar", "season": "shoulder", "avgTemp": 19, "rainfall": 91, "events": [], "note": "Autumn starting, rain easing" },
+      { "month": "Apr", "season": "peak", "avgTemp": 16, "rainfall": 54, "events": [], "note": "Cool, dry, comfortable" },
+      { "month": "May", "season": "peak", "avgTemp": 13, "rainfall": 13, "events": [], "note": "Dry, sunny, crisp mornings" },
+      { "month": "Jun", "season": "peak", "avgTemp": 10, "rainfall": 9, "events": [], "note": "Cool winter, dry, sunny days" },
+      { "month": "Jul", "season": "peak", "avgTemp": 10, "rainfall": 4, "events": [], "note": "Coldest, dry, great for game reserves" },
+      { "month": "Aug", "season": "peak", "avgTemp": 13, "rainfall": 6, "events": [], "note": "Dry, warming up, great safaris" },
+      { "month": "Sep", "season": "shoulder", "avgTemp": 17, "rainfall": 27, "events": [], "note": "Spring, jacarandas blooming" },
+      { "month": "Oct", "season": "shoulder", "avgTemp": 19, "rainfall": 72, "events": [], "note": "Warm, jacaranda peak, rain starting" },
+      { "month": "Nov", "season": "shoulder", "avgTemp": 20, "rainfall": 117, "events": [], "note": "Hot, afternoon storms" },
+      { "month": "Dec", "season": "shoulder", "avgTemp": 21, "rainfall": 105, "events": ["Christmas"], "note": "Hot, rainy, holiday season" }
+    ]
+  },
+  "Sao Paulo": {
+    "months": [
+      { "month": "Jan", "season": "off", "avgTemp": 23, "rainfall": 239, "events": [], "note": "Hot, very rainy, summer" },
+      { "month": "Feb", "season": "off", "avgTemp": 23, "rainfall": 217, "events": ["Carnival"], "note": "Hot, wet, Carnival celebrations" },
+      { "month": "Mar", "season": "shoulder", "avgTemp": 22, "rainfall": 160, "events": [], "note": "Rain easing, still warm" },
+      { "month": "Apr", "season": "peak", "avgTemp": 20, "rainfall": 76, "events": [], "note": "Autumn, pleasant, dry" },
+      { "month": "May", "season": "peak", "avgTemp": 18, "rainfall": 74, "events": [], "note": "Cool, dry, comfortable" },
+      { "month": "Jun", "season": "peak", "avgTemp": 17, "rainfall": 56, "events": [], "note": "Winter, cool but pleasant" },
+      { "month": "Jul", "season": "peak", "avgTemp": 17, "rainfall": 43, "events": [], "note": "Coolest, dry, great for visits" },
+      { "month": "Aug", "season": "peak", "avgTemp": 18, "rainfall": 38, "events": [], "note": "Dry, warming up" },
+      { "month": "Sep", "season": "shoulder", "avgTemp": 19, "rainfall": 80, "events": [], "note": "Spring, rain returning" },
+      { "month": "Oct", "season": "shoulder", "avgTemp": 20, "rainfall": 124, "events": [], "note": "Warm, rainy spells" },
+      { "month": "Nov", "season": "off", "avgTemp": 21, "rainfall": 146, "events": [], "note": "Hot, wet season starting" },
+      { "month": "Dec", "season": "off", "avgTemp": 22, "rainfall": 201, "events": ["Christmas", "New Year"], "note": "Hot, rainy, festive" }
+    ]
+  },
+  "Bogota": {
+    "months": [
+      { "month": "Jan", "season": "peak", "avgTemp": 14, "rainfall": 46, "events": [], "note": "Dry, mild, comfortable" },
+      { "month": "Feb", "season": "peak", "avgTemp": 14, "rainfall": 57, "events": [], "note": "Dry, pleasant" },
+      { "month": "Mar", "season": "shoulder", "avgTemp": 14, "rainfall": 80, "events": [], "note": "Rain increasing" },
+      { "month": "Apr", "season": "off", "avgTemp": 14, "rainfall": 115, "events": [], "note": "Wet season, heavy rain" },
+      { "month": "May", "season": "off", "avgTemp": 14, "rainfall": 100, "events": [], "note": "Rainy, green" },
+      { "month": "Jun", "season": "shoulder", "avgTemp": 14, "rainfall": 54, "events": [], "note": "Drier spell, comfortable" },
+      { "month": "Jul", "season": "shoulder", "avgTemp": 13, "rainfall": 38, "events": [], "note": "Driest, cool" },
+      { "month": "Aug", "season": "shoulder", "avgTemp": 14, "rainfall": 42, "events": [], "note": "Dry, mild" },
+      { "month": "Sep", "season": "off", "avgTemp": 14, "rainfall": 70, "events": [], "note": "Rain returning" },
+      { "month": "Oct", "season": "off", "avgTemp": 14, "rainfall": 133, "events": [], "note": "Wettest month" },
+      { "month": "Nov", "season": "off", "avgTemp": 14, "rainfall": 109, "events": [], "note": "Wet, transitioning" },
+      { "month": "Dec", "season": "peak", "avgTemp": 14, "rainfall": 69, "events": ["Christmas"], "note": "Dry season starts, festive" }
+    ]
+  },
+  "Lima": {
+    "months": [
+      { "month": "Jan", "season": "peak", "avgTemp": 23, "rainfall": 1, "events": [], "note": "Summer, warm, sunny" },
+      { "month": "Feb", "season": "peak", "avgTemp": 24, "rainfall": 0, "events": [], "note": "Hottest, beach season" },
+      { "month": "Mar", "season": "shoulder", "avgTemp": 23, "rainfall": 0, "events": [], "note": "Warm, dry" },
+      { "month": "Apr", "season": "shoulder", "avgTemp": 21, "rainfall": 0, "events": [], "note": "Cooling, pleasant" },
+      { "month": "May", "season": "off", "avgTemp": 19, "rainfall": 1, "events": [], "note": "Overcast, garua mist starts" },
+      { "month": "Jun", "season": "off", "avgTemp": 17, "rainfall": 1, "events": [], "note": "Cool, grey, garua" },
+      { "month": "Jul", "season": "off", "avgTemp": 16, "rainfall": 1, "events": ["Independence Day"], "note": "Coolest, grey, festivals" },
+      { "month": "Aug", "season": "off", "avgTemp": 16, "rainfall": 2, "events": [], "note": "Cool, overcast" },
+      { "month": "Sep", "season": "shoulder", "avgTemp": 16, "rainfall": 1, "events": [], "note": "Clearing up" },
+      { "month": "Oct", "season": "shoulder", "avgTemp": 18, "rainfall": 0, "events": ["Senor de los Milagros"], "note": "Warming, sunny" },
+      { "month": "Nov", "season": "shoulder", "avgTemp": 19, "rainfall": 0, "events": [], "note": "Warm, sunny" },
+      { "month": "Dec", "season": "peak", "avgTemp": 21, "rainfall": 0, "events": ["Christmas"], "note": "Summer starting, festive" }
+    ]
+  },
+  "Santiago": {
+    "months": [
+      { "month": "Jan", "season": "peak", "avgTemp": 21, "rainfall": 3, "events": [], "note": "Hot, dry summer, swimming" },
+      { "month": "Feb", "season": "peak", "avgTemp": 20, "rainfall": 3, "events": [], "note": "Hot, dry, vineyard tours" },
+      { "month": "Mar", "season": "shoulder", "avgTemp": 18, "rainfall": 5, "events": [], "note": "Autumn starting, grape harvest" },
+      { "month": "Apr", "season": "shoulder", "avgTemp": 14, "rainfall": 13, "events": [], "note": "Cool, autumn colors" },
+      { "month": "May", "season": "off", "avgTemp": 11, "rainfall": 42, "events": [], "note": "Rain starting, cool" },
+      { "month": "Jun", "season": "off", "avgTemp": 8, "rainfall": 84, "events": [], "note": "Cold, wet, ski season starts" },
+      { "month": "Jul", "season": "off", "avgTemp": 8, "rainfall": 76, "events": [], "note": "Coldest, wet, skiing" },
+      { "month": "Aug", "season": "off", "avgTemp": 9, "rainfall": 56, "events": [], "note": "Cold, rainy" },
+      { "month": "Sep", "season": "shoulder", "avgTemp": 12, "rainfall": 22, "events": ["Independence Day"], "note": "Spring, Fiestas Patrias" },
+      { "month": "Oct", "season": "peak", "avgTemp": 15, "rainfall": 15, "events": [], "note": "Spring, warming up" },
+      { "month": "Nov", "season": "peak", "avgTemp": 18, "rainfall": 8, "events": [], "note": "Warm, dry, beautiful" },
+      { "month": "Dec", "season": "peak", "avgTemp": 20, "rainfall": 5, "events": ["Christmas"], "note": "Summer starting, festive" }
+    ]
   }
 }

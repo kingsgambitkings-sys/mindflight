@@ -120,39 +120,105 @@
   function initAutocomplete(inputEl, dropdownEl, hiddenEl) {
     if (!inputEl || !dropdownEl) return;
     var airports = typeof AIRPORTS !== 'undefined' ? AIRPORTS : [];
+    var activeIndex = -1;
 
-    inputEl.addEventListener('input', function() {
-      var q = this.value.toLowerCase().trim();
-      if (q.length < 1) { dropdownEl.classList.remove('open'); return; }
-      var matches = airports.filter(function(a) {
-        return a.code.toLowerCase().indexOf(q) !== -1 ||
-               a.city.toLowerCase().indexOf(q) !== -1 ||
-               a.country.toLowerCase().indexOf(q) !== -1;
-      }).slice(0, 8);
-      if (matches.length === 0) { dropdownEl.classList.remove('open'); return; }
-      dropdownEl.innerHTML = matches.map(function(a) {
-        return '<div class="airport-option" data-code="' + escapeHtml(a.code) + '" data-city="' + escapeHtml(a.city) + '">' +
+    // WAI-ARIA combobox pattern (P2 Fix #11)
+    var listboxId = 'listbox-' + Math.random().toString(36).slice(2, 8);
+    inputEl.setAttribute('role', 'combobox');
+    inputEl.setAttribute('aria-autocomplete', 'list');
+    inputEl.setAttribute('aria-expanded', 'false');
+    inputEl.setAttribute('aria-owns', listboxId);
+    inputEl.setAttribute('aria-haspopup', 'listbox');
+    dropdownEl.setAttribute('role', 'listbox');
+    dropdownEl.setAttribute('id', listboxId);
+
+    function updateDropdown(matches) {
+      if (matches.length === 0) {
+        dropdownEl.classList.remove('open');
+        inputEl.setAttribute('aria-expanded', 'false');
+        inputEl.removeAttribute('aria-activedescendant');
+        activeIndex = -1;
+        return;
+      }
+      dropdownEl.innerHTML = matches.map(function(a, i) {
+        var optId = listboxId + '-opt-' + i;
+        return '<div class="airport-option" role="option" id="' + optId + '" data-code="' + escapeHtml(a.code) + '" data-city="' + escapeHtml(a.city) + '" aria-selected="false">' +
           '<span class="airport-option-code">' + escapeHtml(a.code) + '</span>' +
           '<span class="airport-option-city">' + escapeHtml(a.city) + '</span>' +
           '<span class="airport-option-country">' + escapeHtml(a.country) + '</span>' +
         '</div>';
       }).join('');
       dropdownEl.classList.add('open');
-    });
+      inputEl.setAttribute('aria-expanded', 'true');
+      activeIndex = -1;
+    }
 
-    dropdownEl.addEventListener('click', function(e) {
-      var opt = e.target.closest('.airport-option');
-      if (!opt) return;
+    function selectOption(opt) {
       var code = opt.dataset.code;
       var city = opt.dataset.city;
       inputEl.value = city + ' (' + code + ')';
       if (hiddenEl) hiddenEl.value = code;
       dropdownEl.classList.remove('open');
+      inputEl.setAttribute('aria-expanded', 'false');
+      inputEl.removeAttribute('aria-activedescendant');
+      activeIndex = -1;
+    }
+
+    function setActiveDescendant(idx) {
+      var options = dropdownEl.querySelectorAll('.airport-option');
+      options.forEach(function(o) { o.classList.remove('active'); o.setAttribute('aria-selected', 'false'); });
+      if (idx >= 0 && idx < options.length) {
+        options[idx].classList.add('active');
+        options[idx].setAttribute('aria-selected', 'true');
+        inputEl.setAttribute('aria-activedescendant', options[idx].id);
+        options[idx].scrollIntoView({ block: 'nearest' });
+      } else {
+        inputEl.removeAttribute('aria-activedescendant');
+      }
+    }
+
+    inputEl.addEventListener('input', function() {
+      var q = this.value.toLowerCase().trim();
+      if (q.length < 1) { dropdownEl.classList.remove('open'); inputEl.setAttribute('aria-expanded', 'false'); return; }
+      var matches = airports.filter(function(a) {
+        return a.code.toLowerCase().indexOf(q) !== -1 ||
+               a.city.toLowerCase().indexOf(q) !== -1 ||
+               a.country.toLowerCase().indexOf(q) !== -1;
+      }).slice(0, 8);
+      updateDropdown(matches);
+    });
+
+    inputEl.addEventListener('keydown', function(e) {
+      var options = dropdownEl.querySelectorAll('.airport-option');
+      if (!options.length) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeIndex = Math.min(activeIndex + 1, options.length - 1);
+        setActiveDescendant(activeIndex);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIndex = Math.max(activeIndex - 1, 0);
+        setActiveDescendant(activeIndex);
+      } else if (e.key === 'Enter' && activeIndex >= 0) {
+        e.preventDefault();
+        selectOption(options[activeIndex]);
+      } else if (e.key === 'Escape') {
+        dropdownEl.classList.remove('open');
+        inputEl.setAttribute('aria-expanded', 'false');
+        activeIndex = -1;
+      }
+    });
+
+    dropdownEl.addEventListener('click', function(e) {
+      var opt = e.target.closest('.airport-option');
+      if (!opt) return;
+      selectOption(opt);
     });
 
     document.addEventListener('click', function(e) {
       if (!inputEl.contains(e.target) && !dropdownEl.contains(e.target)) {
         dropdownEl.classList.remove('open');
+        inputEl.setAttribute('aria-expanded', 'false');
       }
     });
   }
@@ -221,9 +287,10 @@
       : '<span class="flight-stops-badge">' + stops + ' stop' + (stops > 1 ? 's' : '') + '</span>';
 
     var dealClass = '';
-    if (flight.deal === 'great') dealClass = 'deal-great';
-    else if (flight.deal === 'fair') dealClass = 'deal-fair';
-    else if (flight.deal === 'high') dealClass = 'deal-high';
+    var dealLabel = '';
+    if (flight.deal === 'great') { dealClass = 'deal-great'; dealLabel = 'Great Deal'; }
+    else if (flight.deal === 'fair') { dealClass = 'deal-fair'; dealLabel = 'Fair Price'; }
+    else if (flight.deal === 'high') { dealClass = 'deal-high'; dealLabel = 'Above Average'; }
 
     var co2Html = renderCO2Badge(flight.co2_kg);
     var ratingHtml = renderAirlineRating(flight.airline_code || flight.airlineCode);
@@ -241,6 +308,7 @@
     }
 
     var html = '<div class="flight-result-card ' + dealClass + '" data-index="' + index + '">' +
+      (dealLabel ? '<span class="deal-quality-badge ' + dealClass + '">' + dealLabel + '</span>' : '') +
       '<div class="flight-result-main">' +
         '<div class="flight-compare-wrap"><input type="checkbox" class="flight-compare-check" data-index="' + index + '" title="Compare"></div>' +
         '<div class="flight-airline">' +
@@ -907,15 +975,19 @@
       '<div class="seasonal-bar">' +
         data.months.map(function(m, i) {
           var cls = 'seasonal-great';
-          if (m.rating === 'ok' || m.rating === 'fair') cls = 'seasonal-ok';
-          else if (m.rating === 'avoid' || m.rating === 'bad') cls = 'seasonal-avoid';
+          var seasonLabel = 'Best';
+          if (m.season === 'shoulder' || m.rating === 'ok' || m.rating === 'fair') { cls = 'seasonal-ok'; seasonLabel = 'OK'; }
+          else if (m.season === 'off' || m.rating === 'avoid' || m.rating === 'bad') { cls = 'seasonal-avoid'; seasonLabel = 'Avoid'; }
           var isCurrent = i === currentMonth;
-          return '<div class="seasonal-month ' + cls + (isCurrent ? ' seasonal-current' : '') + '" title="' + months[i] + ': ' + (m.temp || '') + '">' +
+          var tempDisplay = m.avgTemp !== undefined ? m.avgTemp + '\u00b0' : (m.temp || '');
+          return '<div class="seasonal-month ' + cls + (isCurrent ? ' seasonal-current' : '') + '" title="' + months[i] + ': ' + tempDisplay + (m.note ? ' - ' + m.note : '') + '">' +
             '<span class="seasonal-month-label">' + months[i].charAt(0) + '</span>' +
-            (m.temp ? '<span class="seasonal-month-temp">' + m.temp + '</span>' : '') +
+            '<span class="seasonal-season-label">' + seasonLabel + '</span>' +
+            (tempDisplay ? '<span class="seasonal-month-temp">' + tempDisplay + '</span>' : '') +
           '</div>';
         }).join('') +
       '</div>' +
+      '<div class="seasonal-legend"><span class="seasonal-legend-item"><span class="seasonal-dot seasonal-great"></span> Best</span><span class="seasonal-legend-item"><span class="seasonal-dot seasonal-ok"></span> OK</span><span class="seasonal-legend-item"><span class="seasonal-dot seasonal-avoid"></span> Avoid</span></div>' +
     '</div>';
   }
 
@@ -1109,6 +1181,16 @@
       }
     }
 
+    // P2 Fix #13: ARIA grid role and arrow key navigation
+    calGrid.setAttribute('role', 'grid');
+    calGrid.querySelectorAll('.cal-day:not(.empty)').forEach(function(day) {
+      day.setAttribute('role', 'gridcell');
+      day.setAttribute('tabindex', '-1');
+    });
+    // Make first non-empty day tabbable
+    var firstDay = calGrid.querySelector('.cal-day:not(.empty)');
+    if (firstDay) firstDay.setAttribute('tabindex', '0');
+
     // Click handler
     calGrid.querySelectorAll('.cal-day:not(.empty)').forEach(function(day) {
       day.addEventListener('click', function() {
@@ -1117,6 +1199,34 @@
         calGrid.querySelectorAll('.cal-day').forEach(function(d) { d.classList.remove('selected'); });
         this.classList.add('selected');
       });
+    });
+
+    // Arrow key navigation
+    calGrid.addEventListener('keydown', function(e) {
+      var allDays = Array.from(calGrid.querySelectorAll('.cal-day'));
+      var focusedIdx = allDays.indexOf(document.activeElement);
+      if (focusedIdx < 0) return;
+      var newIdx = focusedIdx;
+      if (e.key === 'ArrowRight') { newIdx = focusedIdx + 1; }
+      else if (e.key === 'ArrowLeft') { newIdx = focusedIdx - 1; }
+      else if (e.key === 'ArrowDown') { newIdx = focusedIdx + 7; }
+      else if (e.key === 'ArrowUp') { newIdx = focusedIdx - 7; }
+      else if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        allDays[focusedIdx].click();
+        return;
+      }
+      else return;
+      e.preventDefault();
+      // Skip empty days
+      while (newIdx >= 0 && newIdx < allDays.length && allDays[newIdx].classList.contains('empty')) {
+        newIdx += (e.key === 'ArrowRight' || e.key === 'ArrowDown') ? 1 : -1;
+      }
+      if (newIdx >= 0 && newIdx < allDays.length && !allDays[newIdx].classList.contains('empty')) {
+        allDays[focusedIdx].setAttribute('tabindex', '-1');
+        allDays[newIdx].setAttribute('tabindex', '0');
+        allDays[newIdx].focus();
+      }
     });
   }
 
@@ -1142,7 +1252,7 @@
     return weekends;
   }
 
-  function renderWeekendGetaways() {
+  async function renderWeekendGetaways() {
     var container = $('#weekendGetaways');
     if (!container) return;
     var weekends = getNextWeekends(4);
@@ -1152,16 +1262,27 @@
 
     if (destinations.length === 0) { container.style.display = 'none'; return; }
 
+    // Fetch cached prices from the server
+    var cachedPrices = {};
+    try {
+      var priceData = await apiFetch('/api/explore?origin=' + State.origin);
+      if (priceData && priceData.destinations) {
+        priceData.destinations.forEach(function(d) { cachedPrices[d.code] = d.price; });
+      }
+    } catch(e) { /* cached prices optional */ }
+
     var html = '<div class="section-header"><h2 class="section-title">Weekend Getaways</h2></div>' +
       '<div class="weekend-scroll">';
     var destIdx = 0;
     weekends.forEach(function(wk) {
       var dest = destinations[destIdx % destinations.length];
       destIdx++;
+      var cachedPrice = cachedPrices[dest.code];
+      var priceText = cachedPrice ? 'From ' + currSym() + Math.round(cachedPrice) : 'Check price';
       html += '<button class="weekend-card" data-dest="' + dest.code + '" data-date="' + wk.fri + '">' +
         '<div class="weekend-card-city">' + (dest.flag || '') + ' ' + dest.city + '</div>' +
         '<div class="weekend-card-dates">' + wk.label + '</div>' +
-        '<div class="weekend-card-price">From ' + currSym() + (100 + Math.floor(Math.random() * 400)) + '</div>' +
+        '<div class="weekend-card-price">' + priceText + '</div>' +
       '</button>';
     });
     html += '</div>';
@@ -1887,12 +2008,19 @@
         var origin = $('#originSelect') ? $('#originSelect').value : '';
         var dest = $('#destSelect') ? $('#destSelect').value : '';
         if (!origin || !dest) { showToast('Search a route first', 'warning'); return; }
-        State.watchedRoutes.push({
+        var routeObj = {
           origin: origin,
           destination: dest,
           date: $('#flightDate') ? $('#flightDate').value : '',
           addedAt: new Date().toISOString()
+        };
+        // Sync to server
+        apiFetch('/api/travel/routes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ origin: origin, destination: dest, travelDate: routeObj.date || new Date().toISOString().slice(0,10), label: origin + ' \u2192 ' + dest })
         });
+        State.watchedRoutes.push(routeObj);
         localStorage.setItem('mf_watched', JSON.stringify(State.watchedRoutes));
         renderWatchedRoutes();
         showToast('Route ' + origin + '-' + dest + ' is now watched!', 'success');
@@ -1956,12 +2084,19 @@
         var origin = $('#originSelect') ? $('#originSelect').value : '';
         var dest = $('#destSelect') ? $('#destSelect').value : '';
         if (!origin || !dest) return;
-        State.watchedRoutes.push({
+        var abRouteObj = {
           origin: origin,
           destination: dest,
           date: $('#flightDate') ? $('#flightDate').value : '',
           addedAt: new Date().toISOString()
+        };
+        // Sync to server
+        apiFetch('/api/travel/routes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ origin: origin, destination: dest, travelDate: abRouteObj.date || new Date().toISOString().slice(0,10), label: origin + ' \u2192 ' + dest })
         });
+        State.watchedRoutes.push(abRouteObj);
         localStorage.setItem('mf_watched', JSON.stringify(State.watchedRoutes));
         renderWatchedRoutes();
         showToast('Route watched!', 'success');
@@ -2009,13 +2144,22 @@
         var dest = $('#destSelect') ? $('#destSelect').value : '';
         var target = $('#alertTargetPrice') ? parseFloat($('#alertTargetPrice').value) : 0;
         if (!target) { showToast('Enter a target price', 'warning'); return; }
-        State.alerts.push({
+        var alertObj = {
           origin: origin,
           destination: dest,
           targetPrice: target,
           currency: State.currency,
           createdAt: new Date().toISOString()
+        };
+        // Sync to server
+        apiFetch('/api/alerts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(alertObj)
+        }).then(function(resp) {
+          if (resp && resp.id) alertObj.serverId = resp.id;
         });
+        State.alerts.push(alertObj);
         localStorage.setItem('mf_alerts', JSON.stringify(State.alerts));
         var modal = $('#alertModal');
         if (modal) modal.classList.remove('open');
@@ -2033,9 +2177,24 @@
       return '<div class="alert-item">' +
         '<span class="alert-route">' + escapeHtml(a.origin) + ' ' + String.fromCharCode(8594) + ' ' + escapeHtml(a.destination) + '</span>' +
         '<span class="alert-target">Below ' + formatPrice(a.targetPrice) + '</span>' +
-        '<button class="btn-text" onclick="this.closest(\'.alert-item\').remove();" style="color:var(--danger);font-size:11px;">Remove</button>' +
+        '<button class="btn-text alert-remove-btn" data-index="' + i + '" style="color:var(--danger);font-size:11px;">Remove</button>' +
       '</div>';
     }).join('');
+    // Attach removal handlers that properly update state and localStorage
+    container.querySelectorAll('.alert-remove-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var idx = parseInt(this.dataset.index);
+        // Also delete from server if it has a server id
+        var alert = State.alerts[idx];
+        if (alert && alert.serverId) {
+          apiFetch('/api/alerts/' + alert.serverId, { method: 'DELETE' });
+        }
+        State.alerts.splice(idx, 1);
+        localStorage.setItem('mf_alerts', JSON.stringify(State.alerts));
+        renderAlerts();
+        showToast('Alert removed', 'info');
+      });
+    });
   }
 
   // ===== FEATURE 17: SHARE BUTTONS ON RESULTS =====
@@ -2140,7 +2299,123 @@
     // Fix #28: Auto-load deals on page init
     loadDeals();
 
+    // P2 Fix #12: Focus trapping for modals
+    document.querySelectorAll('.modal-overlay').forEach(function(m) {
+      modalObserver.observe(m, { attributes: true, attributeFilter: ['class'] });
+    });
+
+    // P2 Fix #16: More options toggle
+    initMoreOptionsToggle();
+
+    // P2 Fix #15: First-run origin picker
+    initOriginPicker();
+
     console.log('MindFlight v2 initialized with 20 features');
+  }
+
+  // ===== P2 FIX #12: FOCUS TRAPPING FOR MODALS =====
+  function trapFocus(modalOverlay) {
+    if (!modalOverlay) return;
+    var focusableSelector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    var previousFocus = document.activeElement;
+
+    function handleKeydown(e) {
+      if (e.key === 'Escape') {
+        modalOverlay.classList.remove('open');
+        if (previousFocus) previousFocus.focus();
+        modalOverlay.removeEventListener('keydown', handleKeydown);
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      var focusable = Array.from(modalOverlay.querySelectorAll(focusableSelector)).filter(function(el) {
+        return el.offsetParent !== null;
+      });
+      if (focusable.length === 0) return;
+      var first = focusable[0];
+      var last = focusable[focusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    }
+
+    modalOverlay.addEventListener('keydown', handleKeydown);
+
+    // Focus first focusable element
+    setTimeout(function() {
+      var focusable = modalOverlay.querySelectorAll(focusableSelector);
+      if (focusable.length > 0) focusable[0].focus();
+    }, 100);
+
+    // Return cleanup function
+    return function() {
+      modalOverlay.removeEventListener('keydown', handleKeydown);
+      if (previousFocus) previousFocus.focus();
+    };
+  }
+
+  // Observe modal opens and trap focus
+  var modalObserver = new MutationObserver(function(mutations) {
+    mutations.forEach(function(m) {
+      if (m.type === 'attributes' && m.attributeName === 'class') {
+        var target = m.target;
+        if (target.classList.contains('modal-overlay') && target.classList.contains('open')) {
+          trapFocus(target);
+        }
+      }
+    });
+  });
+
+  // ===== P2 FIX #16: MORE OPTIONS TOGGLE =====
+  function initMoreOptionsToggle() {
+    var toggle = $('#moreOptionsToggle');
+    var panel = $('#moreOptionsPanel');
+    if (!toggle || !panel) return;
+    toggle.addEventListener('click', function() {
+      var expanded = panel.style.display !== 'none';
+      panel.style.display = expanded ? 'none' : 'flex';
+      toggle.setAttribute('aria-expanded', !expanded);
+      toggle.querySelector('span').textContent = expanded ? 'More options' : 'Fewer options';
+    });
+  }
+
+  // ===== P2 FIX #15: FIRST-RUN ORIGIN PICKER =====
+  function initOriginPicker() {
+    if (localStorage.getItem('mf_origin_set')) return;
+    var modal = $('#originPickerModal');
+    if (!modal) return;
+
+    // Init autocomplete for origin picker
+    initAutocomplete($('#originPickerInput'), $('#originPickerDropdown'), $('#originPickerSelect'));
+
+    modal.classList.add('open');
+
+    var saveBtn = $('#originPickerSave');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', function() {
+        var code = $('#originPickerSelect') ? $('#originPickerSelect').value : '';
+        var currency = $('#originPickerCurrency') ? $('#originPickerCurrency').value : 'GBP';
+        if (!code) { showToast('Please select an airport', 'warning'); return; }
+
+        // Set origin
+        State.origin = code;
+        localStorage.setItem('mf_origin', code);
+        localStorage.setItem('mf_origin_set', '1');
+        if ($('#originSelect')) $('#originSelect').value = code;
+        var airport = getAirportByCode(code);
+        if (airport && $('#originInput')) $('#originInput').value = airport.city + ' (' + airport.code + ')';
+
+        // Set currency
+        State.currency = currency;
+        localStorage.setItem('mf_currency', currency);
+        if ($('#currencySelect')) $('#currencySelect').value = currency;
+
+        modal.classList.remove('open');
+        showToast('Welcome! Home airport set to ' + code, 'success');
+        loadDeals();
+      });
+    }
   }
 
   // ===== Fix #16: Globe initialization =====
