@@ -12,7 +12,7 @@
   ],
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/index.js" },
-    { "src": "/(.*\\.(js|css|html|json|png|svg|jpg|ico|webmanifest))", "dest": "/public/$1" },
+    { "src": "/(.*\\.(js|css|html|json|png|svg|jpg|ico|webmanifest|xml|txt))", "dest": "/public/$1" },
     { "src": "/(.*)", "dest": "/public/index.html" }
   ]
 }

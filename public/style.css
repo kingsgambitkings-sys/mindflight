@@ -32,7 +32,7 @@
   /* Text */
   --text-primary: #f1f5f9;
   --text-secondary: #94a3b8;
-  --text-muted: #475569;
+  --text-muted: #64748b;
 
   /* Border */
   --border: #1e293b;
@@ -2562,6 +2562,86 @@ html { scroll-padding-top: 140px; }
   color: var(--accent);
   font-family: var(--font-mono);
   text-align: right;
+}
+
+/* ===== Skip to content link (Fix #21) ===== */
+.skip-to-content {
+  position: absolute;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: var(--bg);
+  padding: 8px 20px;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 10000;
+  transition: top 0.2s ease;
+  text-decoration: none;
+}
+.skip-to-content:focus {
+  top: 8px;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ===== Fix #14: Prevent iOS auto-zoom on inputs ===== */
+@media (max-width: 767px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* ===== Fix #22: prefers-reduced-motion ===== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ===== Fix #25: Touch target minimum 44px on mobile ===== */
+@media (max-width: 767px) {
+  .topbar-btn,
+  .gsb-swap,
+  .rcb-btn,
+  .nav-pill,
+  .mobile-nav-item,
+  .filter-chip,
+  .result-tab,
+  .btn-outline,
+  .btn-primary,
+  .btn-secondary,
+  .btn-text,
+  .lucky-btn,
+  .weekend-card,
+  .cheapest-card,
+  .recent-search-card,
+  .search-template-chip,
+  .cal-nav,
+  .chart-range-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* ===== Fix #27: Safe area padding for notched phones ===== */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .topbar {
+    padding-top: env(safe-area-inset-top);
+  }
+  .site-footer {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .compare-bar {
+    bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+  .pwa-banner {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 
 /* ===== MOBILE RESPONSIVE ADDITIONS ===== */

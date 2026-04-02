@@ -6,6 +6,7 @@ import { dirname, join } from 'path';
 import { readFileSync } from 'fs';
 import dotenv from 'dotenv';
 import cron from 'node-cron';
+import rateLimit from 'express-rate-limit';
 
 import { gatewayRouter } from './gateway.js';
 import { amadeusRouter, calculateCO2, getNearbyAirports } from './amadeus.js';
@@ -20,8 +21,52 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors({ origin: process.env.ALLOWED_ORIGIN || true, methods: ['GET', 'POST', 'DELETE'] }));
+// ===== Cache JSON data files at startup (Fix #9) =====
+const DATA_CACHE = {};
+const dataFiles = [
+  'city-costs.json', 'visa-requirements.json', 'destination-facts.json',
+  'airline-ratings.json', 'baggage-policies.json', 'airport-info.json',
+  'holidays.json', 'seasonal-guide.json', 'airport-timezones.json'
+];
+for (const file of dataFiles) {
+  try {
+    const filePath = join(__dirname, '..', 'data', file);
+    DATA_CACHE[file] = JSON.parse(readFileSync(filePath, 'utf8'));
+  } catch { /* file may not exist */ }
+}
+
+// ===== Security headers (Fix #7) =====
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
+
+// ===== CORS restriction (Fix #5) =====
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGIN || 'https://mindforce-eight.vercel.app',
+  methods: ['GET', 'POST', 'DELETE']
+}));
+
+// ===== Rate limiting (Fix #6, #12) =====
+const globalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' }
+});
+const amadeusLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many Amadeus API requests, please try again later.' }
+});
+app.use('/api/', globalLimiter);
+app.use('/api/amadeus/', amadeusLimiter);
+
 app.use(express.json({ limit: '1mb' }));
 app.use(express.static(join(__dirname, '..', 'public')));
 
@@ -32,6 +77,79 @@ app.use('/api/gateway', gatewayRouter);
 
 // Amadeus Flight API
 app.use('/api/amadeus', amadeusRouter);
+
+// ===== Fix #1: GET /api/flights proxy to Amadeus POST endpoint =====
+app.get('/api/flights', async (req, res) => {
+  try {
+    const { origin, destination, date, adults, pax, cabin, currency } = req.query;
+    if (!origin || !destination) return res.status(400).json({ error: 'Missing origin or destination' });
+    // Forward as internal POST to amadeus/flights handler
+    const body = {
+      origin: origin.toUpperCase(),
+      destination: destination.toUpperCase(),
+      date: date || '',
+      passengers: parseInt(adults || pax) || 1,
+      cabinClass: (cabin || 'economy').toUpperCase(),
+      currency: (currency || 'GBP').toUpperCase()
+    };
+    // Use fetch to call our own Amadeus endpoint internally
+    const protocol = req.protocol;
+    const host = req.get('host');
+    const resp = await fetch(`${protocol}://${host}/api/amadeus/flights`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await resp.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message, flights: [] });
+  }
+});
+
+// ===== Fix #2: GET /api/deals endpoint =====
+app.get('/api/deals', (req, res) => {
+  try {
+    const { origin, currency } = req.query;
+    if (!origin) return res.status(400).json({ error: 'Missing origin' });
+
+    // Load airports data for city/country/flag info
+    const airportsPath = join(__dirname, '..', 'public', 'airports.js');
+    let airportLookup = {};
+    try {
+      const airportsContent = readFileSync(airportsPath, 'utf8');
+      const entries = airportsContent.matchAll(/\{\s*code:\s*'([^']+)',\s*city:\s*'([^']+)',\s*country:\s*'([^']+)',\s*flag:\s*'([^']+)'/g);
+      for (const entry of entries) {
+        airportLookup[entry[1]] = { city: entry[2], country: entry[3], flag: entry[4] };
+      }
+    } catch { /* not critical */ }
+
+    const cached = memoryStore.getExploreFromOrigin(origin.toUpperCase());
+    const deals = cached.map(row => {
+      const info = airportLookup[row.code] || {};
+      const price = row.price;
+      let deal = 'fair';
+      if (price < 200) deal = 'great';
+      else if (price > 500) deal = 'high';
+      return {
+        origin: origin.toUpperCase(),
+        destination: row.code,
+        code: row.code,
+        city: info.city || row.code,
+        country: info.country || '',
+        flag: info.flag || '',
+        price: price,
+        currency: row.currency || currency || 'GBP',
+        cachedAt: row.cached_at,
+        deal: deal
+      };
+    });
+
+    res.json({ deals, count: deals.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Travel: watched routes and price history
 app.get('/api/travel/routes', (req, res) => {
@@ -56,9 +174,17 @@ app.get('/api/travel/prices', (req, res) => {
   }
 });
 
-// Preferences
+// Preferences (Fix #8: whitelist settings keys)
+const ALLOWED_SETTINGS_KEYS = new Set(['name', 'theme', 'voiceLang', 'briefTime', 'origin', 'currency', 'passport']);
 app.get('/api/settings', (req, res) => res.json(settingsStore.get()));
-app.post('/api/settings', (req, res) => { settingsStore.update(req.body); res.json({ ok: true }); });
+app.post('/api/settings', (req, res) => {
+  const filtered = {};
+  for (const key of Object.keys(req.body)) {
+    if (ALLOWED_SETTINGS_KEYS.has(key)) filtered[key] = req.body[key];
+  }
+  settingsStore.update(filtered);
+  res.json({ ok: true });
+});
 
 // ===== Route Analysis =====
 // Returns percentile analysis of cached price history for a route
@@ -275,25 +401,23 @@ app.get('/api/price-grid', (req, res) => {
   }
 });
 
-// ===== City Costs =====
-// Returns estimated daily budgets for major cities
+// ===== City Costs (uses cached data) =====
 app.get('/api/city-costs', (req, res) => {
   try {
-    const costsPath = join(__dirname, '..', 'data', 'city-costs.json');
-    const data = JSON.parse(readFileSync(costsPath, 'utf8'));
+    const data = DATA_CACHE['city-costs.json'];
+    if (!data) return res.status(404).json({ error: 'City costs data not available' });
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ===== Visa Requirements =====
+// ===== Visa Requirements (uses cached data) =====
 app.get('/api/visa', (req, res) => {
   try {
     const { passport, destination } = req.query;
     if (!passport || !destination) return res.status(400).json({ error: 'Missing passport or destination' });
-    const visaPath = join(__dirname, '..', 'data', 'visa-requirements.json');
-    const data = JSON.parse(readFileSync(visaPath, 'utf8'));
+    const data = DATA_CACHE['visa-requirements.json'] || {};
     const p = passport.toUpperCase();
     const d = destination.toUpperCase();
     if (!data[p]) return res.json({ passport: p, destination: d, info: null, note: 'Passport nationality not found' });
@@ -304,13 +428,11 @@ app.get('/api/visa', (req, res) => {
   }
 });
 
-// ===== Destination Facts =====
+// ===== Destination Facts (uses cached data) =====
 app.get('/api/destination-facts/:city', (req, res) => {
   try {
-    const factsPath = join(__dirname, '..', 'data', 'destination-facts.json');
-    const data = JSON.parse(readFileSync(factsPath, 'utf8'));
+    const data = DATA_CACHE['destination-facts.json'] || {};
     const city = req.params.city;
-    // Try exact match first, then case-insensitive
     let facts = data[city];
     if (!facts) {
       const key = Object.keys(data).find(k => k.toLowerCase() === city.toLowerCase());
@@ -323,11 +445,10 @@ app.get('/api/destination-facts/:city', (req, res) => {
   }
 });
 
-// ===== Airline Ratings =====
+// ===== Airline Ratings (uses cached data) =====
 app.get('/api/airline-ratings/:iata', (req, res) => {
   try {
-    const ratingsPath = join(__dirname, '..', 'data', 'airline-ratings.json');
-    const data = JSON.parse(readFileSync(ratingsPath, 'utf8'));
+    const data = DATA_CACHE['airline-ratings.json'] || {};
     const iata = req.params.iata.toUpperCase();
     const rating = data[iata];
     if (!rating) return res.status(404).json({ error: 'Airline not found' });
@@ -339,19 +460,17 @@ app.get('/api/airline-ratings/:iata', (req, res) => {
 
 app.get('/api/airline-ratings', (req, res) => {
   try {
-    const ratingsPath = join(__dirname, '..', 'data', 'airline-ratings.json');
-    const data = JSON.parse(readFileSync(ratingsPath, 'utf8'));
+    const data = DATA_CACHE['airline-ratings.json'] || {};
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ===== Baggage Policies =====
+// ===== Baggage Policies (uses cached data) =====
 app.get('/api/baggage/:iata', (req, res) => {
   try {
-    const baggagePath = join(__dirname, '..', 'data', 'baggage-policies.json');
-    const data = JSON.parse(readFileSync(baggagePath, 'utf8'));
+    const data = DATA_CACHE['baggage-policies.json'] || {};
     const iata = req.params.iata.toUpperCase();
     const policy = data[iata];
     if (!policy) return res.status(404).json({ error: 'Airline not found' });
@@ -361,11 +480,10 @@ app.get('/api/baggage/:iata', (req, res) => {
   }
 });
 
-// ===== Airport Info =====
+// ===== Airport Info (uses cached data) =====
 app.get('/api/airport-info/:iata', (req, res) => {
   try {
-    const infoPath = join(__dirname, '..', 'data', 'airport-info.json');
-    const data = JSON.parse(readFileSync(infoPath, 'utf8'));
+    const data = DATA_CACHE['airport-info.json'] || {};
     const iata = req.params.iata.toUpperCase();
     const info = data[iata];
     if (!info) return res.status(404).json({ error: 'Airport not found' });
@@ -375,11 +493,10 @@ app.get('/api/airport-info/:iata', (req, res) => {
   }
 });
 
-// ===== Holidays =====
+// ===== Holidays (uses cached data) =====
 app.get('/api/holidays', (req, res) => {
   try {
-    const holidaysPath = join(__dirname, '..', 'data', 'holidays.json');
-    const data = JSON.parse(readFileSync(holidaysPath, 'utf8'));
+    const data = DATA_CACHE['holidays.json'] || [];
     let filtered = data;
     const { country, month } = req.query;
     if (country) {
@@ -399,11 +516,10 @@ app.get('/api/holidays', (req, res) => {
   }
 });
 
-// ===== Seasonal Guide =====
+// ===== Seasonal Guide (uses cached data) =====
 app.get('/api/seasonal-guide/:city', (req, res) => {
   try {
-    const guidePath = join(__dirname, '..', 'data', 'seasonal-guide.json');
-    const data = JSON.parse(readFileSync(guidePath, 'utf8'));
+    const data = DATA_CACHE['seasonal-guide.json'] || {};
     const city = req.params.city;
     let guide = data[city];
     if (!guide) {
@@ -417,11 +533,10 @@ app.get('/api/seasonal-guide/:city', (req, res) => {
   }
 });
 
-// ===== Timezone Lookup =====
+// ===== Timezone Lookup (uses cached data) =====
 app.get('/api/timezone/:iata', (req, res) => {
   try {
-    const tzPath = join(__dirname, '..', 'data', 'airport-timezones.json');
-    const data = JSON.parse(readFileSync(tzPath, 'utf8'));
+    const data = DATA_CACHE['airport-timezones.json'] || {};
     const iata = req.params.iata.toUpperCase();
     const timezone = data[iata];
     if (!timezone) return res.status(404).json({ error: 'Airport not found' });
@@ -443,14 +558,14 @@ app.get('/api/price-prediction', (req, res) => {
   }
 });
 
-// ===== Shareable Trip/Search =====
+// ===== Shareable Trip/Search (Fix #4: return { id, url }) =====
 app.post('/api/share', (req, res) => {
   try {
     const { type, data } = req.body;
     if (!type || !data) return res.status(400).json({ error: 'Missing type or data' });
     const id = crypto.randomBytes(6).toString('hex');
     memoryStore.insertSharedLink(id, type, data);
-    res.json({ id });
+    res.json({ id, url: `/share/${id}` });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -466,12 +581,13 @@ app.get('/api/share/:id', (req, res) => {
   }
 });
 
-// ===== Recent Searches =====
+// ===== Recent Searches (Fix #3: accept both price and cheapestPrice) =====
 app.post('/api/recent-searches', (req, res) => {
   try {
-    const { origin, destination, date, cheapestPrice, currency } = req.body;
+    const { origin, destination, date, cheapestPrice, price, currency } = req.body;
     if (!origin || !destination) return res.status(400).json({ error: 'Missing origin or destination' });
-    memoryStore.insertRecentSearch(origin, destination, date, cheapestPrice, currency);
+    const resolvedPrice = cheapestPrice !== undefined ? cheapestPrice : price;
+    memoryStore.insertRecentSearch(origin, destination, date, resolvedPrice, currency);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

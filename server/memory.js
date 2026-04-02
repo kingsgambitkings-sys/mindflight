@@ -82,6 +82,9 @@ db.exec(`
     currency TEXT DEFAULT 'GBP',
     searched_at TEXT DEFAULT (datetime('now'))
   );
+
+  CREATE INDEX IF NOT EXISTS idx_flight_prices_origin_dest ON flight_prices(origin, destination);
+  CREATE INDEX IF NOT EXISTS idx_flight_prices_checked_at ON flight_prices(checked_at);
 `);
 
 const stmts = {

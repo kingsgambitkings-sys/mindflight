@@ -45,6 +45,17 @@
   function $(sel) { return document.querySelector(sel); }
   function $$(sel) { return document.querySelectorAll(sel); }
 
+  // Fix #13: XSS prevention — escape HTML in dynamic content
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   function showToast(msg, type) {
     type = type || 'info';
     var container = $('#toastContainer');
@@ -120,10 +131,10 @@
       }).slice(0, 8);
       if (matches.length === 0) { dropdownEl.classList.remove('open'); return; }
       dropdownEl.innerHTML = matches.map(function(a) {
-        return '<div class="airport-option" data-code="' + a.code + '" data-city="' + a.city + '">' +
-          '<span class="airport-option-code">' + a.code + '</span>' +
-          '<span class="airport-option-city">' + a.city + '</span>' +
-          '<span class="airport-option-country">' + a.country + '</span>' +
+        return '<div class="airport-option" data-code="' + escapeHtml(a.code) + '" data-city="' + escapeHtml(a.city) + '">' +
+          '<span class="airport-option-code">' + escapeHtml(a.code) + '</span>' +
+          '<span class="airport-option-city">' + escapeHtml(a.city) + '</span>' +
+          '<span class="airport-option-country">' + escapeHtml(a.country) + '</span>' +
         '</div>';
       }).join('');
       dropdownEl.classList.add('open');
@@ -233,11 +244,11 @@
       '<div class="flight-result-main">' +
         '<div class="flight-compare-wrap"><input type="checkbox" class="flight-compare-check" data-index="' + index + '" title="Compare"></div>' +
         '<div class="flight-airline">' +
-          '<span>' + (flight.airline || 'Unknown') + '</span> ' + ratingHtml +
-          '<br><span class="flight-airline-code">' + (flight.flight_number || flight.flightNumber || '') + '</span>' +
+          '<span>' + escapeHtml(flight.airline || 'Unknown') + '</span> ' + ratingHtml +
+          '<br><span class="flight-airline-code">' + escapeHtml(flight.flight_number || flight.flightNumber || '') + '</span>' +
         '</div>' +
         '<div class="flight-times">' +
-          '<span class="flight-time">' + (flight.departure || '--:--') + '</span>' +
+          '<span class="flight-time">' + escapeHtml(flight.departure || '--:--') + '</span>' +
           '<div class="flight-arrow">' +
             '<div class="flight-arrow-line"></div>' +
             '<span class="flight-arrow-label">' + formatDuration(flight.duration || 0) + '</span>' +
@@ -250,7 +261,7 @@
         '</div>' +
         '<div class="flight-price">' +
           '<span>' + formatPrice(flight.price) + '</span>' +
-          '<br><span class="flight-price-currency">' + State.currency + '</span>' +
+          '<br><span class="flight-price-currency">' + escapeHtml(State.currency) + '</span>' +
         '</div>' +
         '<div class="flight-expand-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>' +
       '</div>' +
@@ -269,20 +280,20 @@
       segHtml = '<div class="flight-segments"><div class="segments-label">Flight Route</div><div class="segments-timeline">';
       segments.forEach(function(seg, i) {
         segHtml += '<div class="segment-leg">' +
-          '<div class="segment-flight-num">' + (seg.flight_number || seg.flightNumber || '') + ' · ' + (seg.aircraft || '') + '</div>' +
+          '<div class="segment-flight-num">' + escapeHtml(seg.flight_number || seg.flightNumber || '') + ' · ' + escapeHtml(seg.aircraft || '') + '</div>' +
           '<div class="segment-route">' +
-            '<span class="segment-airport">' + (seg.from || '') + '</span>' +
-            '<span class="segment-time">' + (seg.dep_time || '') + '</span>' +
+            '<span class="segment-airport">' + escapeHtml(seg.from || '') + '</span>' +
+            '<span class="segment-time">' + escapeHtml(seg.dep_time || '') + '</span>' +
             '<span class="segment-arrow">-></span>' +
-            '<span class="segment-airport">' + (seg.to || '') + '</span>' +
-            '<span class="segment-time">' + (seg.arr_time || '') + '</span>' +
+            '<span class="segment-airport">' + escapeHtml(seg.to || '') + '</span>' +
+            '<span class="segment-time">' + escapeHtml(seg.arr_time || '') + '</span>' +
             '<span class="segment-dur">' + formatDuration(seg.duration || 0) + '</span>' +
           '</div>';
         // Layover explorer for connecting flights
         if (seg.layover && seg.layover.airport) {
           var layMins = seg.layover.minutes || 0;
           var layHtml = '<div class="segment-layover">' +
-            '<span>Layover at ' + seg.layover.airport + ': ' + formatDuration(layMins) + '</span>' +
+            '<span>Layover at ' + escapeHtml(seg.layover.airport) + ': ' + formatDuration(layMins) + '</span>' +
             '<div class="layover-info" id="layover_' + index + '_' + i + '"></div>';
           if (layMins > 240) {
             layHtml += '<div class="layover-explore-hint">Long layover -- explore the city?</div>';
@@ -298,9 +309,9 @@
     }
 
     // Booking links
-    var origin = flight.origin || ($('#originSelect') ? $('#originSelect').value : 'HKG');
-    var dest = flight.destination || ($('#destSelect') ? $('#destSelect').value : '');
-    var date = flight.date || ($('#flightDate') ? $('#flightDate').value : '');
+    var origin = escapeHtml(flight.origin || ($('#originSelect') ? $('#originSelect').value : 'HKG'));
+    var dest = escapeHtml(flight.destination || ($('#destSelect') ? $('#destSelect').value : ''));
+    var date = escapeHtml(flight.date || ($('#flightDate') ? $('#flightDate').value : ''));
     var bookHtml = '<div class="flight-booking">' +
       '<span class="booking-label">Book this flight</span>' +
       '<div class="booking-links">' +
@@ -325,7 +336,7 @@
       if (data.transit_hotel) features.push('Transit hotel');
       if (data.visa_free_transit) features.push('No visa needed');
       el.innerHTML = features.length > 0
-        ? '<span class="layover-features">' + airportCode + ': ' + features.join(' · ') + '</span>'
+        ? '<span class="layover-features">' + escapeHtml(airportCode) + ': ' + escapeHtml(features.join(' · ')) + '</span>'
         : '';
     }
   }
@@ -466,7 +477,7 @@
     ];
 
     var headerHtml = '<th></th>' + flights.map(function(f) {
-      return '<th>' + (f.airline || '') + '<br><small>' + (f.flight_number || f.flightNumber || '') + '</small></th>';
+      return '<th>' + escapeHtml(f.airline || '') + '<br><small>' + escapeHtml(f.flight_number || f.flightNumber || '') + '</small></th>';
     }).join('');
 
     var bodyHtml = rows.map(function(row) {
@@ -607,18 +618,18 @@
       var countdown = getCountdownText(trip);
       var countdownCls = getCountdownClass(trip);
       var dests = (trip.destinations || []).map(function(d) {
-        return '<span class="trip-dest-tag">' + d + '</span>';
+        return '<span class="trip-dest-tag">' + escapeHtml(d) + '</span>';
       }).join('');
 
       return '<div class="trip-card" data-index="' + i + '">' +
-        (countdown ? '<div class="trip-countdown ' + countdownCls + '">' + countdown + '</div>' : '') +
+        (countdown ? '<div class="trip-countdown ' + countdownCls + '">' + escapeHtml(countdown) + '</div>' : '') +
         '<div class="trip-card-header">' +
-          '<span class="trip-card-name">' + (trip.name || 'Untitled Trip') + '</span>' +
-          '<span class="trip-card-date">' + (trip.departDate || trip.depart_date || '') +
-            (trip.returnDate || trip.return_date ? ' - ' + (trip.returnDate || trip.return_date) : '') + '</span>' +
+          '<span class="trip-card-name">' + escapeHtml(trip.name || 'Untitled Trip') + '</span>' +
+          '<span class="trip-card-date">' + escapeHtml(trip.departDate || trip.depart_date || '') +
+            (trip.returnDate || trip.return_date ? ' - ' + escapeHtml(trip.returnDate || trip.return_date) : '') + '</span>' +
         '</div>' +
         '<div class="trip-card-destinations">' + dests + '</div>' +
-        (trip.notes ? '<div class="trip-card-notes">' + trip.notes + '</div>' : '') +
+        (trip.notes ? '<div class="trip-card-notes">' + escapeHtml(trip.notes) + '</div>' : '') +
         (trip.dailyBudget ? '<div class="trip-card-cost">' + formatPrice(trip.dailyBudget) + '/day x ' + (trip.days || 7) + ' days = ' + formatPrice(trip.dailyBudget * (trip.days || 7)) + '</div>' : '') +
         renderBudgetBreakdown(trip) +
         '<div class="trip-card-actions">' +
@@ -730,9 +741,9 @@
         if (diff < 0) priceChange = '<span class="price-change-down">' + String.fromCharCode(8595) + formatPrice(Math.abs(diff)) + '</span>';
         else if (diff > 0) priceChange = '<span class="price-change-up">' + String.fromCharCode(8593) + formatPrice(diff) + '</span>';
       }
-      return '<button class="recent-search-card" data-origin="' + s.origin + '" data-dest="' + s.destination + '" data-date="' + (s.date || '') + '">' +
-        '<span class="recent-route">' + s.origin + ' ' + String.fromCharCode(8594) + ' ' + s.destination + '</span>' +
-        '<span class="recent-meta">' + (s.date ? s.date.slice(5) : '') + (s.price ? ' · ' + formatPrice(s.price) : '') + ' · ' + timeAgo(s.timestamp) + '</span>' +
+      return '<button class="recent-search-card" data-origin="' + escapeHtml(s.origin) + '" data-dest="' + escapeHtml(s.destination) + '" data-date="' + escapeHtml(s.date || '') + '">' +
+        '<span class="recent-route">' + escapeHtml(s.origin) + ' ' + String.fromCharCode(8594) + ' ' + escapeHtml(s.destination) + '</span>' +
+        '<span class="recent-meta">' + (s.date ? escapeHtml(s.date.slice(5)) : '') + (s.price ? ' · ' + formatPrice(s.price) : '') + ' · ' + timeAgo(s.timestamp) + '</span>' +
         priceChange +
       '</button>';
     }).join('');
@@ -757,7 +768,7 @@
     var container = $('#searchTemplates');
     if (!container) return;
     var html = State.searchTemplates.map(function(t, i) {
-      return '<button class="search-template-chip" data-index="' + i + '" title="Right-click to delete">' + t.name + '</button>';
+      return '<button class="search-template-chip" data-index="' + i + '" title="Right-click to delete">' + escapeHtml(t.name) + '</button>';
     }).join('');
     html += '<button class="search-template-chip template-save-chip" id="saveTemplateChip">+ Save</button>';
     container.innerHTML = html;
@@ -975,10 +986,22 @@
     if ($('#discoveryCountry')) $('#discoveryCountry').textContent = airport.country + ' ' + (airport.flag || '');
     if ($('#discoveryBadge')) $('#discoveryBadge').textContent = 'YOUR DESTINATION';
 
-    // Set hero image using Wikipedia
+    // Set hero image using Wikipedia REST API (Fix #17: replace deprecated unsplash)
     var hero = $('#discoveryHero');
     if (hero) {
-      hero.style.backgroundImage = 'url(https://source.unsplash.com/800x400/?' + encodeURIComponent(airport.city + ' skyline') + ')';
+      hero.style.backgroundImage = 'none';
+      fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(airport.city))
+        .then(function(resp) { return resp.json(); })
+        .then(function(wikiData) {
+          if (wikiData && wikiData.thumbnail && wikiData.thumbnail.source) {
+            hero.style.backgroundImage = 'url(' + wikiData.thumbnail.source + ')';
+          }
+          if (wikiData && wikiData.extract) {
+            var aboutEl = $('#discoveryAbout');
+            if (aboutEl) aboutEl.innerHTML = '<p>' + escapeHtml(wikiData.extract) + '</p>';
+          }
+        })
+        .catch(function() { /* Wikipedia image not critical */ });
     }
 
     // Load extras asynchronously
@@ -1215,9 +1238,12 @@
     if ($('#rcbOrigin')) $('#rcbOrigin').textContent = origin;
     if ($('#rcbDest')) $('#rcbDest').textContent = dest;
     if ($('#rcbDate')) $('#rcbDate').textContent = date;
-    if ($('#rcbPax')) $('#rcbPax').textContent = pax + ' pax';
+    if ($('#rcbPax')) $('#rcbPax').textContent = pax + ' travelers';
     var rcb = $('#routeContextBar');
     if (rcb) rcb.classList.add('visible');
+
+    // Fix #30: Update route stepper to search step
+    updateRouteStep('search');
 
     // Show results area
     if ($('#resultsToolbar')) $('#resultsToolbar').style.display = 'flex';
@@ -1268,6 +1294,13 @@
     State.flights = flights;
     State.compareSet.clear();
     applyFiltersAndSort();
+
+    // Fix #29: Show action bridge after search
+    var actionBridge = $('#actionBridge');
+    if (actionBridge && flights.length > 0) actionBridge.style.display = 'block';
+
+    // Fix #30: Update stepper to compare step after results
+    if (flights.length > 0) updateRouteStep('compare');
 
     // Save recent search
     saveRecentSearch({ origin: origin, destination: dest, date: date }, flights);
@@ -1330,10 +1363,10 @@
         if (d.deal === 'great') dealCls = 'great';
         else if (d.deal === 'fair') dealCls = 'fair';
         else dealCls = 'high';
-        return '<div class="cheapest-card" data-dest="' + (d.destination || d.code || '') + '">' +
-          '<div class="cheapest-card-deal ' + dealCls + '">' + (d.deal || '').toUpperCase() + '</div>' +
-          '<div class="cheapest-card-dest"><span class="flag">' + (d.flag || '') + '</span>' + (d.city || d.destination || '') + '</div>' +
-          '<div class="cheapest-card-route">' + (d.origin || origin) + ' ' + String.fromCharCode(8594) + ' ' + (d.destination || d.code || '') + '</div>' +
+        return '<div class="cheapest-card" data-dest="' + escapeHtml(d.destination || d.code || '') + '">' +
+          '<div class="cheapest-card-deal ' + escapeHtml(dealCls) + '">' + escapeHtml((d.deal || '').toUpperCase()) + '</div>' +
+          '<div class="cheapest-card-dest"><span class="flag">' + escapeHtml(d.flag || '') + '</span>' + escapeHtml(d.city || d.destination || '') + '</div>' +
+          '<div class="cheapest-card-route">' + escapeHtml(d.origin || origin) + ' ' + String.fromCharCode(8594) + ' ' + escapeHtml(d.destination || d.code || '') + '</div>' +
           '<div class="cheapest-card-price">' + formatPrice(d.price || 0) + '</div>' +
         '</div>';
       }).join('');
@@ -1880,8 +1913,8 @@
     container.innerHTML = State.watchedRoutes.map(function(r, i) {
       return '<div class="watched-route">' +
         '<div class="watched-route-info">' +
-          '<div class="watched-route-name">' + r.origin + ' ' + String.fromCharCode(8594) + ' ' + r.destination + '</div>' +
-          '<div class="watched-route-date">' + (r.date || 'Flexible') + ' · Added ' + timeAgo(r.addedAt) + '</div>' +
+          '<div class="watched-route-name">' + escapeHtml(r.origin) + ' ' + String.fromCharCode(8594) + ' ' + escapeHtml(r.destination) + '</div>' +
+          '<div class="watched-route-date">' + escapeHtml(r.date || 'Flexible') + ' · Added ' + timeAgo(r.addedAt) + '</div>' +
         '</div>' +
         '<div class="watched-route-actions">' +
           '<button class="btn-outline btn-sm watched-search-btn" data-index="' + i + '">Search</button>' +
@@ -1998,7 +2031,7 @@
     if (State.alerts.length === 0) { container.innerHTML = ''; return; }
     container.innerHTML = State.alerts.map(function(a, i) {
       return '<div class="alert-item">' +
-        '<span class="alert-route">' + a.origin + ' ' + String.fromCharCode(8594) + ' ' + a.destination + '</span>' +
+        '<span class="alert-route">' + escapeHtml(a.origin) + ' ' + String.fromCharCode(8594) + ' ' + escapeHtml(a.destination) + '</span>' +
         '<span class="alert-target">Below ' + formatPrice(a.targetPrice) + '</span>' +
         '<button class="btn-text" onclick="this.closest(\'.alert-item\').remove();" style="color:var(--danger);font-size:11px;">Remove</button>' +
       '</div>';
@@ -2096,7 +2129,77 @@
     renderTrips();
     renderAlerts();
 
+    // Fix #15: Service worker registration
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
+
+    // Fix #16: Globe initialization (globe.gl is loaded, container exists)
+    initGlobe();
+
+    // Fix #28: Auto-load deals on page init
+    loadDeals();
+
     console.log('MindFlight v2 initialized with 20 features');
+  }
+
+  // ===== Fix #16: Globe initialization =====
+  function initGlobe() {
+    var container = document.getElementById('globeViz');
+    if (!container || typeof Globe === 'undefined') return;
+
+    var globe = Globe()
+      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
+      .backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
+      .pointOfView({ lat: 22.3, lng: 114.2, altitude: 2.5 })
+      .width(container.clientWidth)
+      .height(container.clientHeight);
+
+    globe(container);
+
+    // Add arcs when flights are searched
+    window._mfGlobe = globe;
+
+    // Resize handler
+    window.addEventListener('resize', function() {
+      if (container.clientWidth > 0) {
+        globe.width(container.clientWidth).height(container.clientHeight);
+      }
+    });
+
+    // Add airport points if available
+    if (typeof AIRPORTS !== 'undefined') {
+      var points = AIRPORTS.slice(0, 50).map(function(a) {
+        return { lat: a.lat || 0, lng: a.lon || 0, size: 0.3, color: '#00d4aa', label: a.city + ' (' + a.code + ')' };
+      });
+      globe.pointsData(points)
+        .pointAltitude('size')
+        .pointColor('color')
+        .pointLabel('label')
+        .onPointClick(function(point) {
+          // Find the airport code from label
+          var match = point.label.match(/\(([A-Z]{3})\)/);
+          if (match) openDiscoveryCard(match[1]);
+        });
+    }
+  }
+
+  // ===== Fix #30: Route context bar stepper =====
+  function updateRouteStep(stepName) {
+    var steps = document.querySelectorAll('.rcb-step');
+    var found = false;
+    steps.forEach(function(step) {
+      if (found) {
+        step.classList.remove('completed', 'active');
+      } else if (step.dataset.step === stepName) {
+        step.classList.add('active');
+        step.classList.remove('completed');
+        found = true;
+      } else {
+        step.classList.add('completed');
+        step.classList.remove('active');
+      }
+    });
   }
 
   // Wait for DOM
