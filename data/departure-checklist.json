@@ -1,0 +1,24 @@
+{
+  "items": [
+    { "text": "Check passport validity (6+ months)", "daysBeforeTrip": 30, "category": "documents" },
+    { "text": "Apply for visa if required", "daysBeforeTrip": 30, "category": "documents" },
+    { "text": "Book accommodation", "daysBeforeTrip": 21, "category": "booking" },
+    { "text": "Arrange airport transfer", "daysBeforeTrip": 7, "category": "transport" },
+    { "text": "Download offline maps", "daysBeforeTrip": 3, "category": "tech" },
+    { "text": "Notify bank of travel dates", "daysBeforeTrip": 7, "category": "finance" },
+    { "text": "Check airline online check-in opens", "daysBeforeTrip": 2, "category": "flights" },
+    { "text": "Print or save boarding pass", "daysBeforeTrip": 1, "category": "flights" },
+    { "text": "Charge devices and power banks", "daysBeforeTrip": 1, "category": "tech" },
+    { "text": "Set out-of-office email", "daysBeforeTrip": 1, "category": "work" },
+    { "text": "Confirm flight is on time", "daysBeforeTrip": 0, "category": "flights" },
+    { "text": "Empty fridge of perishables", "daysBeforeTrip": 0, "category": "home" },
+    { "text": "Lock all windows and doors", "daysBeforeTrip": 0, "category": "home" },
+    { "text": "Arrange pet/plant care", "daysBeforeTrip": 7, "category": "home" },
+    { "text": "Buy travel insurance", "daysBeforeTrip": 14, "category": "finance" },
+    { "text": "Check travel advisories", "daysBeforeTrip": 7, "category": "documents" },
+    { "text": "Copy of passport and docs in cloud", "daysBeforeTrip": 7, "category": "documents" },
+    { "text": "Get local currency or travel card", "daysBeforeTrip": 3, "category": "finance" },
+    { "text": "Pack bags (check packing list)", "daysBeforeTrip": 1, "category": "packing" },
+    { "text": "Weigh luggage", "daysBeforeTrip": 1, "category": "packing" }
+  ]
+}

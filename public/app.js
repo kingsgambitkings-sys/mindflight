@@ -689,7 +689,7 @@
         return '<span class="trip-dest-tag">' + escapeHtml(d) + '</span>';
       }).join('');
 
-      return '<div class="trip-card" data-index="' + i + '">' +
+      return '<div class="trip-card" data-index="' + i + '" role="button" tabindex="0" aria-label="Open trip ' + escapeHtml(trip.name || 'Untitled Trip') + '">' +
         (countdown ? '<div class="trip-countdown ' + countdownCls + '">' + escapeHtml(countdown) + '</div>' : '') +
         '<div class="trip-card-header">' +
           '<span class="trip-card-name">' + escapeHtml(trip.name || 'Untitled Trip') + '</span>' +
@@ -701,26 +701,45 @@
         (trip.dailyBudget ? '<div class="trip-card-cost">' + formatPrice(trip.dailyBudget) + '/day x ' + (trip.days || 7) + ' days = ' + formatPrice(trip.dailyBudget * (trip.days || 7)) + '</div>' : '') +
         renderBudgetBreakdown(trip) +
         '<div class="trip-card-actions">' +
-          '<button class="btn-outline trip-calendar-btn" data-index="' + i + '">Add to Calendar</button>' +
-          '<button class="btn-outline trip-share-btn" data-index="' + i + '">Share Link</button>' +
-          '<button class="btn-text trip-delete-btn" data-index="' + i + '" style="color:var(--danger);">Delete</button>' +
+          '<button class="btn-primary btn-sm trip-open-btn" data-index="' + i + '" aria-label="Plan trip">Plan Trip</button>' +
+          '<button class="btn-outline trip-calendar-btn" data-index="' + i + '" aria-label="Add to calendar">Calendar</button>' +
+          '<button class="btn-outline trip-share-btn" data-index="' + i + '" aria-label="Share trip">Share</button>' +
+          '<button class="btn-text trip-delete-btn" data-index="' + i + '" style="color:var(--danger);" aria-label="Delete trip">Delete</button>' +
         '</div>' +
       '</div>';
     }).join('');
 
     // Attach event listeners
+    container.querySelectorAll('.trip-open-btn').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        openTripDetail(parseInt(this.dataset.index));
+      });
+    });
+    container.querySelectorAll('.trip-card').forEach(function(card) {
+      card.addEventListener('click', function(e) {
+        if (e.target.closest('button')) return;
+        openTripDetail(parseInt(this.dataset.index));
+      });
+      card.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') openTripDetail(parseInt(this.dataset.index));
+      });
+    });
     container.querySelectorAll('.trip-calendar-btn').forEach(function(btn) {
-      btn.addEventListener('click', function() {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
         downloadICS(State.trips[parseInt(this.dataset.index)]);
       });
     });
     container.querySelectorAll('.trip-share-btn').forEach(function(btn) {
-      btn.addEventListener('click', function() {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
         shareTrip(State.trips[parseInt(this.dataset.index)]);
       });
     });
     container.querySelectorAll('.trip-delete-btn').forEach(function(btn) {
-      btn.addEventListener('click', function() {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
         State.trips.splice(parseInt(this.dataset.index), 1);
         localStorage.setItem('mf_trips', JSON.stringify(State.trips));
         renderTrips();
@@ -2284,6 +2303,9 @@
     // Feature 20: Trip budget defaults
     initTripBudgetDefaults();
 
+    // Trip planner (Features 1-12)
+    initTripPlanner();
+
     // Render trips
     renderTrips();
     renderAlerts();
@@ -2456,6 +2478,1330 @@
           var match = point.label.match(/\(([A-Z]{3})\)/);
           if (match) openDiscoveryCard(match[1]);
         });
+    }
+  }
+
+  // ============================================================
+  // TRIP PLANNER — Features 1-12: Full Trip Planning System
+  // ============================================================
+
+  // Color maps
+  var ITINERARY_TYPE_COLORS = {
+    activity: '#6366f1', meal: '#f59e0b', transport: '#3b82f6',
+    sightseeing: '#10b981', accommodation: '#ec4899', other: '#94a3b8'
+  };
+  var ITINERARY_TYPE_ICONS = {
+    activity: '\u{1F3AF}', meal: '\u{1F37D}', transport: '\u{1F68C}',
+    sightseeing: '\u{1F5FC}', accommodation: '\u{1F3E8}', other: '\u{1F4CC}'
+  };
+  var EXPENSE_CATEGORY_COLORS = {
+    food: '#f59e0b', transport: '#3b82f6', accommodation: '#ec4899',
+    activities: '#10b981', shopping: '#8b5cf6', other: '#94a3b8'
+  };
+  var DAY_COLORS = [
+    '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6',
+    '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'
+  ];
+  var DOC_TYPE_ICONS = {
+    booking: '\u{1F4CB}', passport: '\u{1F6C2}', insurance: '\u{1F3E5}',
+    emergency: '\u{1F6A8}', visa: '\u{1F4C4}', other: '\u{1F4CE}'
+  };
+
+  // Trip planner state
+  var TripPlanner = {
+    currentTripIndex: -1,
+    currentDay: 1,
+    leafletMap: null,
+    leafletMarkers: [],
+    exchangeRateCache: {},
+    travelTimeCache: {}
+  };
+
+  // --- LocalStorage helpers for trip sub-data ---
+  function getTripStorageKey(tripIndex, type) {
+    return 'mf-trip-' + tripIndex + '-' + type;
+  }
+  function getTripSubData(tripIndex, type) {
+    try {
+      return JSON.parse(localStorage.getItem(getTripStorageKey(tripIndex, type)) || '[]');
+    } catch(e) { return []; }
+  }
+  function setTripSubData(tripIndex, type, data) {
+    localStorage.setItem(getTripStorageKey(tripIndex, type), JSON.stringify(data));
+  }
+  function getTripSubObj(tripIndex, type) {
+    try {
+      return JSON.parse(localStorage.getItem(getTripStorageKey(tripIndex, type)) || '{}');
+    } catch(e) { return {}; }
+  }
+  function setTripSubObj(tripIndex, type, data) {
+    localStorage.setItem(getTripStorageKey(tripIndex, type), JSON.stringify(data));
+  }
+
+  // --- Compute trip days between depart and return ---
+  function computeTripDays(departDate, returnDate) {
+    if (!departDate) return 1;
+    var dep = new Date(departDate);
+    var ret = returnDate ? new Date(returnDate) : dep;
+    var diff = Math.floor((ret - dep) / 86400000) + 1;
+    return Math.max(diff, 1);
+  }
+
+  // --- Open trip detail view ---
+  function openTripDetail(tripIndex) {
+    var trip = State.trips[tripIndex];
+    if (!trip) return;
+    TripPlanner.currentTripIndex = tripIndex;
+    TripPlanner.currentDay = 1;
+
+    var detailView = $('#tripDetailView');
+    var listView = $('#tripsList');
+    var newBtn = $('#newTripBtn');
+    if (listView) listView.style.display = 'none';
+    if (newBtn) newBtn.style.display = 'none';
+    if (detailView) detailView.style.display = 'block';
+
+    // Fill header
+    var nameEl = $('#tripDetailName');
+    var datesEl = $('#tripDetailDates');
+    var countdownEl = $('#tripDetailCountdown');
+    if (nameEl) nameEl.textContent = trip.name || 'Untitled Trip';
+    if (datesEl) datesEl.textContent = (trip.departDate || '') + (trip.returnDate ? ' \u2013 ' + trip.returnDate : '');
+    if (countdownEl) countdownEl.textContent = getCountdownText(trip);
+
+    // Render day tabs
+    renderDayTabs(trip);
+    // Switch to itinerary tab
+    switchTripSubTab('itinerary');
+    // Render itinerary for day 1
+    renderItineraryDay();
+  }
+
+  // --- Close trip detail view ---
+  function closeTripDetail() {
+    var detailView = $('#tripDetailView');
+    var listView = $('#tripsList');
+    var newBtn = $('#newTripBtn');
+    if (detailView) detailView.style.display = 'none';
+    if (listView) listView.style.display = 'block';
+    if (newBtn) newBtn.style.display = 'inline-flex';
+    TripPlanner.currentTripIndex = -1;
+    destroyTripMap();
+    renderTrips();
+  }
+
+  // --- Sub-tab switching ---
+  function switchTripSubTab(tabName) {
+    $$('.trip-subtab').forEach(function(btn) {
+      var isActive = btn.dataset.tab === tabName;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+    $$('.trip-tab-panel').forEach(function(panel) {
+      panel.classList.remove('active');
+    });
+    var targetPanel = $('#tripTab' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
+    if (targetPanel) targetPanel.classList.add('active');
+
+    // Render tab-specific content
+    if (tabName === 'itinerary') renderItineraryDay();
+    if (tabName === 'budget') renderExpensesTab();
+    if (tabName === 'map') initTripMap();
+    if (tabName === 'checklist') renderChecklistTab();
+    if (tabName === 'notes') renderNotesTab();
+  }
+
+  // --- Day tabs ---
+  function renderDayTabs(trip) {
+    var container = $('#dayTabs');
+    if (!container) return;
+    var numDays = computeTripDays(trip.departDate, trip.returnDate);
+    var html = '';
+    for (var i = 1; i <= numDays; i++) {
+      var dateLabel = '';
+      if (trip.departDate) {
+        var d = new Date(trip.departDate);
+        d.setDate(d.getDate() + i - 1);
+        dateLabel = ' ' + (d.getMonth() + 1) + '/' + d.getDate();
+      }
+      html += '<button class="day-tab' + (i === TripPlanner.currentDay ? ' active' : '') + '" data-day="' + i + '" role="tab" aria-label="Day ' + i + escapeHtml(dateLabel) + '">' +
+        'Day ' + i + '<small style="opacity:0.7;margin-left:4px;">' + escapeHtml(dateLabel) + '</small></button>';
+    }
+    container.innerHTML = html;
+
+    // Attach click handlers
+    container.querySelectorAll('.day-tab').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        TripPlanner.currentDay = parseInt(this.dataset.day);
+        container.querySelectorAll('.day-tab').forEach(function(b) {
+          b.classList.remove('active');
+          b.setAttribute('aria-selected', 'false');
+        });
+        this.classList.add('active');
+        this.setAttribute('aria-selected', 'true');
+        renderItineraryDay();
+      });
+    });
+  }
+
+  // ===== FEATURE 3: DAY-BY-DAY ITINERARY BUILDER =====
+  function renderItineraryDay() {
+    var idx = TripPlanner.currentTripIndex;
+    var day = TripPlanner.currentDay;
+    if (idx < 0) return;
+    var trip = State.trips[idx];
+
+    var itinerary = getTripSubData(idx, 'itinerary');
+    var dayItems = itinerary.filter(function(item) { return item.dayNumber === day; });
+    dayItems.sort(function(a, b) {
+      if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+      return (a.startTime || '').localeCompare(b.startTime || '');
+    });
+
+    var listEl = $('#itineraryList');
+    if (!listEl) return;
+
+    if (dayItems.length === 0) {
+      listEl.innerHTML = '<div class="empty-state" style="padding:20px;"><p>No activities planned for this day yet.</p></div>';
+    } else {
+      var html = '';
+      for (var i = 0; i < dayItems.length; i++) {
+        var item = dayItems[i];
+        var color = ITINERARY_TYPE_COLORS[item.type] || ITINERARY_TYPE_COLORS.other;
+        var icon = ITINERARY_TYPE_ICONS[item.type] || ITINERARY_TYPE_ICONS.other;
+        html += '<div class="itinerary-item-card" draggable="true" data-id="' + escapeHtml(item.id) + '" data-sort="' + item.sortOrder + '">' +
+          '<div class="itinerary-time">' + escapeHtml(item.startTime || '--:--') + '</div>' +
+          '<div class="itinerary-type-icon" style="background:' + color + '22;">' + icon + '</div>' +
+          '<div class="itinerary-item-body">' +
+            '<div class="itinerary-item-title">' + escapeHtml(item.title || 'Untitled') + '</div>' +
+            (item.location ? '<div class="itinerary-item-location">' + escapeHtml(item.location) + '</div>' : '') +
+            (item.notes ? '<div class="itinerary-item-notes">' + escapeHtml(item.notes) + '</div>' : '') +
+          '</div>' +
+          '<div class="itinerary-item-actions">' +
+            '<button class="delete-btn" data-id="' + escapeHtml(item.id) + '" aria-label="Delete activity">&times;</button>' +
+          '</div>' +
+        '</div>';
+
+        // Travel connector between items
+        if (i < dayItems.length - 1 && item.lat && item.lng && dayItems[i+1].lat && dayItems[i+1].lng) {
+          var dist = haversineDistance(item.lat, item.lng, dayItems[i+1].lat, dayItems[i+1].lng);
+          var mode = dist < 3 ? 'walk' : 'drive';
+          var timeEst = mode === 'walk' ? Math.round(dist / 5 * 60) : Math.round(dist / 30 * 60);
+          html += '<div class="travel-connector"><div class="travel-connector-info">' +
+            '~' + timeEst + ' min ' + mode + ' (' + dist.toFixed(1) + ' km)</div></div>';
+        }
+      }
+      listEl.innerHTML = html;
+
+      // Drag and drop
+      initItineraryDragDrop(listEl);
+
+      // Delete buttons
+      listEl.querySelectorAll('.delete-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          deleteItineraryItem(this.dataset.id);
+        });
+      });
+    }
+
+    // Render accommodation bar
+    renderAccommodationBar();
+
+    // Render weather
+    renderDayWeather();
+  }
+
+  // Haversine distance in km
+  function haversineDistance(lat1, lon1, lat2, lon2) {
+    var R = 6371;
+    var dLat = (lat2 - lat1) * Math.PI / 180;
+    var dLon = (lon2 - lon1) * Math.PI / 180;
+    var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  // Add activity
+  function addItineraryItem(itemData) {
+    var idx = TripPlanner.currentTripIndex;
+    if (idx < 0) return;
+    var itinerary = getTripSubData(idx, 'itinerary');
+    var dayItems = itinerary.filter(function(item) { return item.dayNumber === TripPlanner.currentDay; });
+    var newItem = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      dayNumber: TripPlanner.currentDay,
+      sortOrder: dayItems.length,
+      type: itemData.type || 'activity',
+      title: itemData.title || '',
+      location: itemData.location || '',
+      startTime: itemData.startTime || '',
+      notes: itemData.notes || '',
+      lat: itemData.lat || null,
+      lng: itemData.lng || null,
+      createdAt: new Date().toISOString()
+    };
+    itinerary.push(newItem);
+    setTripSubData(idx, 'itinerary', itinerary);
+    renderItineraryDay();
+    showToast('Activity added!', 'success');
+
+    // Try to geocode
+    if (newItem.location && !newItem.lat) {
+      geocodeLocation(newItem.location, newItem.id);
+    }
+  }
+
+  // Delete activity
+  function deleteItineraryItem(itemId) {
+    var idx = TripPlanner.currentTripIndex;
+    if (idx < 0) return;
+    var itinerary = getTripSubData(idx, 'itinerary');
+    itinerary = itinerary.filter(function(item) { return item.id !== itemId; });
+    setTripSubData(idx, 'itinerary', itinerary);
+    renderItineraryDay();
+    showToast('Activity deleted', 'info');
+  }
+
+  // Geocode a location string using Nominatim
+  function geocodeLocation(locationStr, itemId) {
+    var idx = TripPlanner.currentTripIndex;
+    if (idx < 0) return;
+    fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(locationStr) + '&format=json&limit=1')
+      .then(function(r) { return r.json(); })
+      .then(function(results) {
+        if (results && results.length > 0) {
+          var lat = parseFloat(results[0].lat);
+          var lng = parseFloat(results[0].lon);
+          var itinerary = getTripSubData(idx, 'itinerary');
+          for (var i = 0; i < itinerary.length; i++) {
+            if (itinerary[i].id === itemId) {
+              itinerary[i].lat = lat;
+              itinerary[i].lng = lng;
+              break;
+            }
+          }
+          setTripSubData(idx, 'itinerary', itinerary);
+        }
+      })
+      .catch(function() {});
+  }
+
+  // Drag and drop for itinerary reordering
+  function initItineraryDragDrop(listEl) {
+    var dragItem = null;
+    listEl.querySelectorAll('.itinerary-item-card').forEach(function(card) {
+      card.addEventListener('dragstart', function(e) {
+        dragItem = this;
+        this.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', this.dataset.id);
+      });
+      card.addEventListener('dragend', function() {
+        this.classList.remove('dragging');
+        listEl.querySelectorAll('.itinerary-item-card').forEach(function(c) { c.classList.remove('drag-over'); });
+        // Save new order
+        saveItineraryOrder(listEl);
+      });
+      card.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        if (dragItem && dragItem !== this) {
+          this.classList.add('drag-over');
+        }
+      });
+      card.addEventListener('dragleave', function() {
+        this.classList.remove('drag-over');
+      });
+      card.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('drag-over');
+        if (dragItem && dragItem !== this) {
+          // Insert before or after
+          var rect = this.getBoundingClientRect();
+          var midY = rect.top + rect.height / 2;
+          if (e.clientY < midY) {
+            listEl.insertBefore(dragItem, this);
+          } else {
+            listEl.insertBefore(dragItem, this.nextSibling);
+          }
+        }
+      });
+    });
+  }
+
+  function saveItineraryOrder(listEl) {
+    var idx = TripPlanner.currentTripIndex;
+    if (idx < 0) return;
+    var itinerary = getTripSubData(idx, 'itinerary');
+    var cards = listEl.querySelectorAll('.itinerary-item-card');
+    cards.forEach(function(card, i) {
+      var id = card.dataset.id;
+      for (var j = 0; j < itinerary.length; j++) {
+        if (itinerary[j].id === id) {
+          itinerary[j].sortOrder = i;
+          break;
+        }
+      }
+    });
+    setTripSubData(idx, 'itinerary', itinerary);
+  }
+
+  // ===== FEATURE 9: ACCOMMODATION TRACKER =====
+  function renderAccommodationBar() {
+    var idx = TripPlanner.currentTripIndex;
+    if (idx < 0) return;
+    var trip = State.trips[idx];
+    var barEl = $('#accommodationBar');
+    if (!barEl) return;
+
+    var accommodations = getTripSubData(idx, 'accommodation');
+    if (accommodations.length === 0) {
+      barEl.innerHTML = '';
+      return;
+    }
+
+    var day = TripPlanner.currentDay;
+    var dayDate = null;
+    if (trip.departDate) {
+      dayDate = new Date(trip.departDate);
+      dayDate.setDate(dayDate.getDate() + day - 1);
+    }
+
+    var html = '';
+    var hasCoverage = false;
+    accommodations.forEach(function(acc) {
+      var checkIn = new Date(acc.checkIn);
+      var checkOut = new Date(acc.checkOut);
+      if (dayDate && dayDate >= checkIn && dayDate < checkOut) {
+        hasCoverage = true;
+        html += '<div class="accommodation-item">' +
+          '<span class="accommodation-item-name">' + escapeHtml(acc.name) + '</span>' +
+          '<span class="accommodation-item-dates">' + escapeHtml(acc.checkIn) + ' \u2013 ' + escapeHtml(acc.checkOut) + '</span>' +
+          (acc.costPerNight ? '<span class="accommodation-item-cost">' + formatPrice(acc.costPerNight) + '/night</span>' : '') +
+          '<button class="accommodation-item-delete" data-id="' + escapeHtml(acc.id) + '" aria-label="Remove accommodation">&times;</button>' +
+        '</div>';
+      }
+    });
+
+    if (!hasCoverage && dayDate) {
+      html += '<div class="accommodation-warning">No accommodation booked for this night</div>';
+    }
+
+    barEl.innerHTML = html;
+
+    barEl.querySelectorAll('.accommodation-item-delete').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var accId = this.dataset.id;
+        var accs = getTripSubData(idx, 'accommodation');
+        accs = accs.filter(function(a) { return a.id !== accId; });
+        setTripSubData(idx, 'accommodation', accs);
+        renderAccommodationBar();
+        showToast('Accommodation removed', 'info');
+      });
+    });
+  }
+
+  // ===== FEATURE 11: WEATHER FORECAST ON TRIP DAYS =====
+  function renderDayWeather() {
+    var idx = TripPlanner.currentTripIndex;
+    if (idx < 0) return;
+    var trip = State.trips[idx];
+    var weatherEl = $('#dayWeather');
+    if (!weatherEl || !trip.departDate) { if (weatherEl) weatherEl.innerHTML = ''; return; }
+
+    var dayDate = new Date(trip.departDate);
+    dayDate.setDate(dayDate.getDate() + TripPlanner.currentDay - 1);
+    var dateStr = dayDate.toISOString().slice(0, 10);
+
+    // Try to get destination coordinates
+    var dest = (trip.destinations && trip.destinations[0]) || '';
+    if (!dest) { weatherEl.innerHTML = ''; return; }
+
+    var airport = typeof AIRPORTS !== 'undefined'
+      ? AIRPORTS.find(function(a) { return a.city.toLowerCase().indexOf(dest.toLowerCase()) !== -1; })
+      : null;
+    if (!airport || !airport.lat) { weatherEl.innerHTML = ''; return; }
+
+    var cacheKey = 'weather_' + airport.code + '_' + dateStr;
+    if (State.apiCaches[cacheKey]) {
+      renderWeatherData(weatherEl, State.apiCaches[cacheKey]);
+      return;
+    }
+
+    // Fetch from Open-Meteo
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=' + airport.lat + '&longitude=' + (airport.lon || airport.lng) +
+      '&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode' +
+      '&start_date=' + dateStr + '&end_date=' + dateStr + '&timezone=auto')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data && data.daily) {
+          var weatherData = {
+            high: data.daily.temperature_2m_max ? data.daily.temperature_2m_max[0] : null,
+            low: data.daily.temperature_2m_min ? data.daily.temperature_2m_min[0] : null,
+            precip: data.daily.precipitation_probability_max ? data.daily.precipitation_probability_max[0] : null,
+            code: data.daily.weathercode ? data.daily.weathercode[0] : null
+          };
+          State.apiCaches[cacheKey] = weatherData;
+          renderWeatherData(weatherEl, weatherData);
+        }
+      })
+      .catch(function() { weatherEl.innerHTML = ''; });
+  }
+
+  function renderWeatherData(el, data) {
+    if (!data || data.high === null) { el.innerHTML = ''; return; }
+    var icon = getWeatherIcon(data.code);
+    el.innerHTML = '<span class="day-weather-icon">' + icon + '</span>' +
+      '<span class="day-weather-temp">' + Math.round(data.high) + '\u00b0 / ' + Math.round(data.low) + '\u00b0C</span>' +
+      (data.precip !== null ? '<span class="day-weather-precip">\u{1F327} ' + data.precip + '%</span>' : '');
+  }
+
+  function getWeatherIcon(code) {
+    if (code === null || code === undefined) return '\u2601';
+    if (code === 0) return '\u2600\uFE0F';
+    if (code <= 3) return '\u26C5';
+    if (code <= 48) return '\u{1F32B}';
+    if (code <= 67) return '\u{1F327}';
+    if (code <= 77) return '\u{1F328}';
+    if (code <= 82) return '\u{1F327}';
+    if (code <= 86) return '\u{1F328}';
+    return '\u26C8';
+  }
+
+  // ===== FEATURE 5: TRIP EXPENSE TRACKER =====
+  function renderExpensesTab() {
+    var idx = TripPlanner.currentTripIndex;
+    if (idx < 0) return;
+    var trip = State.trips[idx];
+    var expenses = getTripSubData(idx, 'expenses');
+
+    // Compute totals
+    var totalBudget = (trip.dailyBudget || 0) * (trip.days || computeTripDays(trip.departDate, trip.returnDate));
+    var totalSpent = 0;
+    var byCategory = {};
+    expenses.forEach(function(exp) {
+      var amt = exp.homeCurrencyAmount || exp.amount || 0;
+      totalSpent += amt;
+      var cat = exp.category || 'other';
+      byCategory[cat] = (byCategory[cat] || 0) + amt;
+    });
+    var remaining = totalBudget - totalSpent;
+    var pctUsed = totalBudget > 0 ? Math.min(100, Math.round(totalSpent / totalBudget * 100)) : 0;
+
+    // Summary
+    var summaryEl = $('#expenseSummary');
+    if (summaryEl) {
+      var progressColor = pctUsed < 80 ? 'var(--success)' : pctUsed < 100 ? 'var(--warning)' : 'var(--danger)';
+      summaryEl.innerHTML = '<div class="expense-stat"><div class="expense-stat-label">Budget</div><div class="expense-stat-value">' + formatPrice(totalBudget) + '</div></div>' +
+        '<div class="expense-stat"><div class="expense-stat-label">Spent</div><div class="expense-stat-value">' + formatPrice(totalSpent) + '</div></div>' +
+        '<div class="expense-stat"><div class="expense-stat-label">Remaining</div><div class="expense-stat-value ' + (remaining >= 0 ? 'remaining' : 'over-budget') + '">' + formatPrice(Math.abs(remaining)) + (remaining < 0 ? ' over' : '') + '</div></div>' +
+        '<div style="grid-column:1/-1;"><div class="expense-progress"><div class="expense-progress-fill" style="width:' + pctUsed + '%;background:' + progressColor + ';"></div></div></div>';
+    }
+
+    // Donut chart
+    renderExpenseDonut(byCategory, totalSpent);
+
+    // Expense list grouped by day
+    renderExpenseList(expenses, trip);
+  }
+
+  function renderExpenseDonut(byCategory, totalSpent) {
+    var chartEl = $('#expenseChartWrap');
+    if (!chartEl) return;
+    if (totalSpent === 0) { chartEl.innerHTML = ''; return; }
+
+    var categories = Object.keys(byCategory).sort(function(a, b) { return byCategory[b] - byCategory[a]; });
+    var gradientParts = [];
+    var cumulative = 0;
+    var legendHtml = '';
+    categories.forEach(function(cat) {
+      var pct = byCategory[cat] / totalSpent * 100;
+      var color = EXPENSE_CATEGORY_COLORS[cat] || '#94a3b8';
+      gradientParts.push(color + ' ' + cumulative.toFixed(1) + '% ' + (cumulative + pct).toFixed(1) + '%');
+      cumulative += pct;
+      legendHtml += '<div class="expense-legend-item"><div class="expense-legend-dot" style="background:' + color + '"></div>' +
+        escapeHtml(cat.charAt(0).toUpperCase() + cat.slice(1)) + ' ' + formatPrice(byCategory[cat]) + ' (' + Math.round(pct) + '%)</div>';
+    });
+
+    chartEl.innerHTML = '<div class="expense-donut" style="background:conic-gradient(' + gradientParts.join(',') + ');">' +
+      '<div class="expense-donut-hole"><div class="expense-donut-total">' + formatPrice(totalSpent) + '</div><div class="expense-donut-label">Total</div></div></div>' +
+      '<div class="expense-category-legend">' + legendHtml + '</div>';
+  }
+
+  function renderExpenseList(expenses, trip) {
+    var listEl = $('#expenseList');
+    if (!listEl) return;
+    if (expenses.length === 0) {
+      listEl.innerHTML = '<div class="empty-state" style="padding:12px;"><p>No expenses recorded yet.</p></div>';
+      return;
+    }
+
+    // Group by date
+    var groups = {};
+    expenses.forEach(function(exp) {
+      var key = exp.date || 'No date';
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(exp);
+    });
+
+    var sortedDates = Object.keys(groups).sort();
+    var html = '';
+    sortedDates.forEach(function(date) {
+      html += '<div class="expense-day-group"><div class="expense-day-header">' + escapeHtml(date) + '</div>';
+      groups[date].forEach(function(exp) {
+        var catColor = EXPENSE_CATEGORY_COLORS[exp.category] || '#94a3b8';
+        var sym = CURRENCY_SYMBOLS[exp.currency] || exp.currency || '';
+        html += '<div class="expense-item">' +
+          '<span class="expense-item-desc">' + escapeHtml(exp.description || 'Expense') + '</span>' +
+          '<span class="expense-item-category" style="background:' + catColor + '22;color:' + catColor + ';">' + escapeHtml(exp.category || 'other') + '</span>' +
+          '<div style="text-align:right;">' +
+            '<span class="expense-item-amount">' + escapeHtml(sym) + escapeHtml(String(exp.amount)) + '</span>' +
+            (exp.homeCurrencyAmount && exp.currency !== State.currency ? '<br><span class="expense-item-converted">\u2248 ' + formatPrice(exp.homeCurrencyAmount) + '</span>' : '') +
+          '</div>' +
+          '<button class="expense-item-delete" data-id="' + escapeHtml(exp.id) + '" aria-label="Delete expense">&times;</button>' +
+        '</div>';
+      });
+      html += '</div>';
+    });
+    listEl.innerHTML = html;
+
+    listEl.querySelectorAll('.expense-item-delete').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var expId = this.dataset.id;
+        var idx = TripPlanner.currentTripIndex;
+        var exps = getTripSubData(idx, 'expenses');
+        exps = exps.filter(function(e) { return e.id !== expId; });
+        setTripSubData(idx, 'expenses', exps);
+        renderExpensesTab();
+        showToast('Expense deleted', 'info');
+      });
+    });
+  }
+
+  // Add expense
+  function addExpense(expenseData) {
+    var idx = TripPlanner.currentTripIndex;
+    if (idx < 0) return;
+    var expenses = getTripSubData(idx, 'expenses');
+    var newExpense = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      amount: expenseData.amount || 0,
+      currency: expenseData.currency || State.currency,
+      homeCurrencyAmount: expenseData.homeCurrencyAmount || expenseData.amount || 0,
+      category: expenseData.category || 'other',
+      description: expenseData.description || '',
+      date: expenseData.date || new Date().toISOString().slice(0, 10),
+      createdAt: new Date().toISOString()
+    };
+    expenses.push(newExpense);
+    setTripSubData(idx, 'expenses', expenses);
+    renderExpensesTab();
+    showToast('Expense added!', 'success');
+  }
+
+  // ===== FEATURE 12: MULTI-CURRENCY CONVERSION =====
+  async function getExchangeRate(from, to) {
+    if (from === to) return 1;
+    var key = from + '_' + to;
+    var cached = TripPlanner.exchangeRateCache[key];
+    if (cached && Date.now() - cached.fetchedAt < 86400000) return cached.rate;
+
+    try {
+      var resp = await fetch('https://api.frankfurter.app/latest?from=' + from + '&to=' + to);
+      var data = await resp.json();
+      if (data && data.rates && data.rates[to]) {
+        var rate = data.rates[to];
+        TripPlanner.exchangeRateCache[key] = { rate: rate, fetchedAt: Date.now() };
+        return rate;
+      }
+    } catch(e) { console.warn('Exchange rate fetch failed:', e); }
+    return 1;
+  }
+
+  async function convertCurrency(amount, from, to) {
+    var rate = await getExchangeRate(from, to);
+    return Math.round(amount * rate * 100) / 100;
+  }
+
+  // ===== FEATURE 4: INTERACTIVE TRIP MAP =====
+  function initTripMap() {
+    var idx = TripPlanner.currentTripIndex;
+    if (idx < 0) return;
+
+    // Wait for Leaflet
+    if (typeof L === 'undefined') {
+      setTimeout(initTripMap, 200);
+      return;
+    }
+
+    var container = document.getElementById('tripMap');
+    if (!container) return;
+
+    // Destroy old map
+    destroyTripMap();
+
+    // Create map
+    TripPlanner.leafletMap = L.map('tripMap').setView([35.68, 139.76], 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 19
+    }).addTo(TripPlanner.leafletMap);
+
+    // Add markers from itinerary
+    var itinerary = getTripSubData(idx, 'itinerary');
+    var markers = [];
+    var dayGroups = {};
+
+    itinerary.forEach(function(item) {
+      if (item.lat && item.lng) {
+        var dayColor = DAY_COLORS[(item.dayNumber - 1) % DAY_COLORS.length];
+        var marker = L.marker([item.lat, item.lng], {
+          icon: L.divIcon({
+            className: 'map-marker-label',
+            html: '<div style="background:' + dayColor + ';" class="map-marker-label">' + item.dayNumber + '</div>',
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+          })
+        }).addTo(TripPlanner.leafletMap);
+
+        marker.bindPopup('<div class="map-popup-card"><h4>' + escapeHtml(item.title) + '</h4>' +
+          '<p>Day ' + item.dayNumber + (item.startTime ? ' \u00b7 ' + escapeHtml(item.startTime) : '') + '</p>' +
+          (item.location ? '<p>' + escapeHtml(item.location) + '</p>' : '') +
+        '</div>');
+
+        markers.push(marker);
+
+        if (!dayGroups[item.dayNumber]) dayGroups[item.dayNumber] = [];
+        dayGroups[item.dayNumber].push([item.lat, item.lng]);
+      }
+    });
+
+    // Add polylines per day
+    Object.keys(dayGroups).forEach(function(day) {
+      var pts = dayGroups[day];
+      if (pts.length > 1) {
+        var dayColor = DAY_COLORS[(parseInt(day) - 1) % DAY_COLORS.length];
+        L.polyline(pts, { color: dayColor, weight: 2, opacity: 0.7, dashArray: '5, 5' }).addTo(TripPlanner.leafletMap);
+      }
+    });
+
+    // Fit bounds
+    if (markers.length > 0) {
+      var group = L.featureGroup(markers);
+      TripPlanner.leafletMap.fitBounds(group.getBounds().pad(0.2));
+    } else {
+      // Try to center on destination
+      var trip = State.trips[idx];
+      var dest = (trip.destinations && trip.destinations[0]) || '';
+      var airport = typeof AIRPORTS !== 'undefined'
+        ? AIRPORTS.find(function(a) { return a.city.toLowerCase().indexOf(dest.toLowerCase()) !== -1; })
+        : null;
+      if (airport && airport.lat) {
+        TripPlanner.leafletMap.setView([airport.lat, airport.lon || airport.lng || 0], 10);
+      }
+    }
+
+    TripPlanner.leafletMarkers = markers;
+
+    // Render map legend
+    renderMapLegend();
+
+    // Force map to recalculate size
+    setTimeout(function() {
+      if (TripPlanner.leafletMap) TripPlanner.leafletMap.invalidateSize();
+    }, 300);
+  }
+
+  function destroyTripMap() {
+    if (TripPlanner.leafletMap) {
+      TripPlanner.leafletMap.remove();
+      TripPlanner.leafletMap = null;
+    }
+    TripPlanner.leafletMarkers = [];
+  }
+
+  function renderMapLegend() {
+    var idx = TripPlanner.currentTripIndex;
+    if (idx < 0) return;
+    var trip = State.trips[idx];
+    var legendEl = $('#mapLegend');
+    if (!legendEl) return;
+    var numDays = computeTripDays(trip.departDate, trip.returnDate);
+    var html = '';
+    for (var i = 1; i <= Math.min(numDays, 10); i++) {
+      var color = DAY_COLORS[(i - 1) % DAY_COLORS.length];
+      html += '<div class="map-legend-item"><div class="map-legend-dot" style="background:' + color + '"></div>Day ' + i + '</div>';
+    }
+    legendEl.innerHTML = html;
+  }
+
+  // ===== FEATURE 6: SMART DEPARTURE CHECKLIST =====
+  function renderChecklistTab() {
+    var idx = TripPlanner.currentTripIndex;
+    if (idx < 0) return;
+
+    renderDepartureChecklist();
+    renderPackingList();
+  }
+
+  function renderDepartureChecklist() {
+    var idx = TripPlanner.currentTripIndex;
+    if (idx < 0) return;
+    var trip = State.trips[idx];
+
+    var checkedItems = getTripSubObj(idx, 'checklist');
+
+    // Built-in departure checklist items grouped by days-before-trip
+    var checklistData = [
+      { group: '4 weeks before', category: 'documents', items: ['Check passport validity (6+ months)', 'Apply for visa if needed', 'Book travel insurance'] },
+      { group: '2 weeks before', category: 'flights', items: ['Confirm flight bookings', 'Check-in online (24h before)', 'Print/save boarding passes'] },
+      { group: '1 week before', category: 'money', items: ['Notify bank of travel dates', 'Get foreign currency', 'Set up travel credit card'] },
+      { group: '2 days before', category: 'packing', items: ['Pack luggage', 'Weigh luggage (check limits)', 'Prepare carry-on essentials', 'Charge all devices'] },
+      { group: 'Day before', category: 'home', items: ['Set lights on timer', 'Unplug appliances', 'Take out trash', 'Water plants'] },
+      { group: 'Day of departure', category: 'tech', items: ['Download offline maps', 'Save hotel confirmation', 'Set out-of-office reply', 'Double-check passport & tickets'] }
+    ];
+
+    var totalItems = 0;
+    var checkedCount = 0;
+
+    // Count totals
+    checklistData.forEach(function(group) {
+      group.items.forEach(function(item) {
+        totalItems++;
+        var key = group.category + '_' + item;
+        if (checkedItems[key]) checkedCount++;
+      });
+    });
+
+    var pctDone = totalItems > 0 ? Math.round(checkedCount / totalItems * 100) : 0;
+
+    var progressEl = $('#checklistProgress');
+    if (progressEl) {
+      progressEl.innerHTML = '<div class="checklist-progress-text">' + checkedCount + '/' + totalItems + ' items completed</div>' +
+        '<div class="checklist-progress-bar"><div class="checklist-progress-fill" style="width:' + pctDone + '%;"></div></div>';
+    }
+
+    var itemsEl = $('#checklistItems');
+    if (!itemsEl) return;
+
+    var html = '';
+    checklistData.forEach(function(group) {
+      html += '<div class="checklist-group"><div class="checklist-group-title cat-' + escapeHtml(group.category) + '">' + escapeHtml(group.group) + '</div>';
+      group.items.forEach(function(item) {
+        var key = group.category + '_' + item;
+        var checked = checkedItems[key] ? true : false;
+        html += '<div class="checklist-item ' + (checked ? 'checked' : '') + '">' +
+          '<input type="checkbox" ' + (checked ? 'checked' : '') + ' data-key="' + escapeHtml(key) + '" aria-label="' + escapeHtml(item) + '">' +
+          '<span class="checklist-item-label">' + escapeHtml(item) + '</span>' +
+        '</div>';
+      });
+      html += '</div>';
+    });
+    itemsEl.innerHTML = html;
+
+    // Attach handlers
+    itemsEl.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
+      cb.addEventListener('change', function() {
+        var chk = getTripSubObj(idx, 'checklist');
+        if (this.checked) {
+          chk[this.dataset.key] = true;
+        } else {
+          delete chk[this.dataset.key];
+        }
+        setTripSubObj(idx, 'checklist', chk);
+        this.parentElement.classList.toggle('checked', this.checked);
+        // Update progress
+        var total = itemsEl.querySelectorAll('input[type="checkbox"]').length;
+        var done = itemsEl.querySelectorAll('input[type="checkbox"]:checked').length;
+        if (progressEl) {
+          progressEl.innerHTML = '<div class="checklist-progress-text">' + done + '/' + total + ' items completed</div>' +
+            '<div class="checklist-progress-bar"><div class="checklist-progress-fill" style="width:' + (total > 0 ? Math.round(done/total*100) : 0) + '%;"></div></div>';
+        }
+      });
+    });
+  }
+
+  // ===== FEATURE 7: SMART PACKING LIST =====
+  function renderPackingList() {
+    var idx = TripPlanner.currentTripIndex;
+    if (idx < 0) return;
+    var trip = State.trips[idx];
+
+    var packingData = getTripSubData(idx, 'packing');
+
+    // If no packing items yet, generate from templates
+    if (packingData.length === 0) {
+      packingData = generatePackingList(trip);
+      setTripSubData(idx, 'packing', packingData);
+    }
+
+    // Group by category
+    var groups = {};
+    packingData.forEach(function(item) {
+      var cat = item.category || 'other';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(item);
+    });
+
+    var totalItems = packingData.length;
+    var checkedCount = packingData.filter(function(i) { return i.checked; }).length;
+    var pctDone = totalItems > 0 ? Math.round(checkedCount / totalItems * 100) : 0;
+
+    var progressEl = $('#packingProgress');
+    if (progressEl) {
+      progressEl.innerHTML = '<div class="checklist-progress-text">' + checkedCount + '/' + totalItems + ' items packed</div>' +
+        '<div class="checklist-progress-bar"><div class="checklist-progress-fill" style="width:' + pctDone + '%;"></div></div>';
+    }
+
+    var itemsEl = $('#packingItems');
+    if (!itemsEl) return;
+
+    var categoryOrder = ['essentials', 'clothes', 'clothes_warm', 'clothes_tropical', 'toiletries', 'tech', 'beach', 'rain_gear', 'custom'];
+    var categoryLabels = {
+      essentials: 'Essentials', clothes: 'Clothing', clothes_warm: 'Warm Weather Gear',
+      clothes_tropical: 'Tropical Wear', toiletries: 'Toiletries', tech: 'Tech & Electronics',
+      beach: 'Beach Essentials', rain_gear: 'Rain Gear', custom: 'Custom Items'
+    };
+
+    var html = '';
+    categoryOrder.forEach(function(cat) {
+      if (!groups[cat]) return;
+      html += '<div class="packing-category-title">' + escapeHtml(categoryLabels[cat] || cat) + '</div>';
+      groups[cat].forEach(function(item, i) {
+        html += '<div class="checklist-item ' + (item.checked ? 'checked' : '') + '">' +
+          '<input type="checkbox" ' + (item.checked ? 'checked' : '') + ' data-id="' + escapeHtml(item.id) + '" aria-label="' + escapeHtml(item.name) + '">' +
+          '<span class="checklist-item-label">' + escapeHtml(item.name) + '</span>' +
+        '</div>';
+      });
+    });
+    itemsEl.innerHTML = html;
+
+    // Attach handlers
+    itemsEl.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
+      cb.addEventListener('change', function() {
+        var id = this.dataset.id;
+        var packing = getTripSubData(idx, 'packing');
+        for (var i = 0; i < packing.length; i++) {
+          if (packing[i].id === id) {
+            packing[i].checked = this.checked;
+            break;
+          }
+        }
+        setTripSubData(idx, 'packing', packing);
+        this.parentElement.classList.toggle('checked', this.checked);
+        // Update progress
+        var total = packing.length;
+        var done = packing.filter(function(p) { return p.checked; }).length;
+        if (progressEl) {
+          progressEl.innerHTML = '<div class="checklist-progress-text">' + done + '/' + total + ' items packed</div>' +
+            '<div class="checklist-progress-bar"><div class="checklist-progress-fill" style="width:' + (total > 0 ? Math.round(done/total*100) : 0) + '%;"></div></div>';
+        }
+      });
+    });
+  }
+
+  function generatePackingList(trip) {
+    var items = [];
+    var id = 0;
+    function addItem(name, category) {
+      items.push({ id: 'packing_' + (id++), name: name, category: category, checked: false });
+    }
+
+    // Essentials (always included)
+    ['Passport', 'Wallet & cards', 'Phone & charger', 'Travel insurance docs', 'Copies of bookings', 'Cash (local currency)'].forEach(function(n) { addItem(n, 'essentials'); });
+
+    // Toiletries (always included)
+    ['Toothbrush & toothpaste', 'Deodorant', 'Shampoo (travel size)', 'Sunscreen', 'Medications', 'First aid kit'].forEach(function(n) { addItem(n, 'toiletries'); });
+
+    // Basic clothes
+    ['Underwear (enough for trip)', 'Socks', 'T-shirts', 'Trousers/shorts', 'Sleepwear', 'Comfortable shoes'].forEach(function(n) { addItem(n, 'clothes'); });
+
+    // Tech
+    ['Power adapter', 'Portable charger', 'Headphones', 'Camera'].forEach(function(n) { addItem(n, 'tech'); });
+
+    // Weather-based items: check destination weather
+    var dest = (trip.destinations && trip.destinations[0]) || '';
+    var airport = typeof AIRPORTS !== 'undefined'
+      ? AIRPORTS.find(function(a) { return a.city.toLowerCase().indexOf(dest.toLowerCase()) !== -1; })
+      : null;
+
+    // Default: include tropical if destination is typically warm
+    var warmDests = ['bangkok', 'bali', 'phuket', 'cancun', 'hawaii', 'miami', 'dubai', 'singapore', 'manila', 'mumbai', 'rio'];
+    var coldDests = ['tokyo', 'seoul', 'london', 'paris', 'new york', 'berlin', 'moscow', 'oslo', 'helsinki', 'stockholm'];
+    var beachDests = ['bali', 'phuket', 'cancun', 'hawaii', 'maldives', 'fiji', 'miami', 'santorini', 'beach'];
+
+    var destLower = dest.toLowerCase();
+
+    if (warmDests.some(function(d) { return destLower.indexOf(d) !== -1; })) {
+      ['Light shorts', 'Tank tops', 'Sandals', 'Sunglasses', 'Sun hat'].forEach(function(n) { addItem(n, 'clothes_tropical'); });
+    }
+    if (coldDests.some(function(d) { return destLower.indexOf(d) !== -1; })) {
+      ['Warm jacket', 'Scarf', 'Gloves', 'Thermal underwear', 'Warm socks'].forEach(function(n) { addItem(n, 'clothes_warm'); });
+    }
+    if (beachDests.some(function(d) { return destLower.indexOf(d) !== -1; })) {
+      ['Swimsuit', 'Beach towel', 'Flip flops', 'Snorkel gear'].forEach(function(n) { addItem(n, 'beach'); });
+    }
+
+    // Rain gear is always useful
+    ['Umbrella', 'Rain jacket'].forEach(function(n) { addItem(n, 'rain_gear'); });
+
+    return items;
+  }
+
+  function addCustomPackingItem(name) {
+    var idx = TripPlanner.currentTripIndex;
+    if (idx < 0 || !name.trim()) return;
+    var packing = getTripSubData(idx, 'packing');
+    packing.push({
+      id: 'packing_custom_' + Date.now(),
+      name: name.trim(),
+      category: 'custom',
+      checked: false
+    });
+    setTripSubData(idx, 'packing', packing);
+    renderPackingList();
+    showToast('Item added to packing list', 'success');
+  }
+
+  // ===== FEATURE 8: TRIP NOTES =====
+  function renderNotesTab() {
+    var idx = TripPlanner.currentTripIndex;
+    if (idx < 0) return;
+
+    var notesData = getTripSubObj(idx, 'notes');
+
+    // Trip notes textarea
+    var textarea = $('#tripNotesArea');
+    if (textarea) {
+      textarea.value = notesData.tripNotes || '';
+      textarea.addEventListener('input', function() {
+        var notes = getTripSubObj(idx, 'notes');
+        notes.tripNotes = this.value;
+        setTripSubObj(idx, 'notes', notes);
+      });
+    }
+
+    // Document vault
+    renderDocVault();
+  }
+
+  function renderDocVault() {
+    var idx = TripPlanner.currentTripIndex;
+    if (idx < 0) return;
+    var notesData = getTripSubObj(idx, 'notes');
+    var documents = notesData.documents || [];
+
+    var vaultEl = $('#docVault');
+    if (!vaultEl) return;
+
+    if (documents.length === 0) {
+      vaultEl.innerHTML = '<div class="empty-state" style="padding:12px;"><p>No documents saved yet.</p></div>';
+      return;
+    }
+
+    // Group by type
+    var groups = {};
+    documents.forEach(function(doc) {
+      var type = doc.type || 'other';
+      if (!groups[type]) groups[type] = [];
+      groups[type].push(doc);
+    });
+
+    var typeOrder = ['booking', 'passport', 'visa', 'insurance', 'emergency', 'other'];
+    var typeLabels = {
+      booking: 'Bookings', passport: 'Travel Documents', visa: 'Visas',
+      insurance: 'Insurance', emergency: 'Emergency Contacts', other: 'Other'
+    };
+
+    var html = '';
+    typeOrder.forEach(function(type) {
+      if (!groups[type]) return;
+      var icon = DOC_TYPE_ICONS[type] || DOC_TYPE_ICONS.other;
+      html += '<div class="doc-group"><div class="doc-group-title"><span class="doc-group-icon">' + icon + '</span> ' + escapeHtml(typeLabels[type] || type) + '</div>';
+      groups[type].forEach(function(doc) {
+        html += '<div class="doc-card">' +
+          '<span class="doc-card-title">' + escapeHtml(doc.title || 'Untitled') + '</span>' +
+          (doc.reference ? '<span class="doc-card-ref">' + escapeHtml(doc.reference) + '</span>' : '') +
+          (doc.reference ? '<button class="doc-copy-btn" data-ref="' + escapeHtml(doc.reference) + '" aria-label="Copy reference">Copy</button>' : '') +
+          '<button class="doc-card-delete" data-id="' + escapeHtml(doc.id) + '" aria-label="Delete document">&times;</button>' +
+        '</div>';
+      });
+      html += '</div>';
+    });
+    vaultEl.innerHTML = html;
+
+    // Copy buttons
+    vaultEl.querySelectorAll('.doc-copy-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var ref = this.dataset.ref;
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(ref).then(function() {
+            showToast('Reference copied!', 'success');
+          });
+        }
+      });
+    });
+
+    // Delete buttons
+    vaultEl.querySelectorAll('.doc-card-delete').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var docId = this.dataset.id;
+        var notes = getTripSubObj(idx, 'notes');
+        notes.documents = (notes.documents || []).filter(function(d) { return d.id !== docId; });
+        setTripSubObj(idx, 'notes', notes);
+        renderDocVault();
+        showToast('Document removed', 'info');
+      });
+    });
+  }
+
+  function addDocument(docData) {
+    var idx = TripPlanner.currentTripIndex;
+    if (idx < 0) return;
+    var notes = getTripSubObj(idx, 'notes');
+    if (!notes.documents) notes.documents = [];
+    notes.documents.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      type: docData.type || 'other',
+      title: docData.title || '',
+      reference: docData.reference || '',
+      notes: docData.notes || '',
+      createdAt: new Date().toISOString()
+    });
+    setTripSubObj(idx, 'notes', notes);
+    renderDocVault();
+    showToast('Document added!', 'success');
+  }
+
+  // ===== TRIP PLANNER INITIALIZATION =====
+  function initTripPlanner() {
+    // Back button
+    var backBtn = $('#tripBackBtn');
+    if (backBtn) backBtn.addEventListener('click', closeTripDetail);
+
+    // Sub-tab switching
+    $$('.trip-subtab').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        switchTripSubTab(this.dataset.tab);
+      });
+    });
+
+    // Add activity form toggle
+    var addActivityBtn = $('#addActivityBtn');
+    var itineraryAddForm = $('#itineraryAddForm');
+    var cancelActivityBtn = $('#cancelActivityBtn');
+    if (addActivityBtn && itineraryAddForm) {
+      addActivityBtn.addEventListener('click', function() {
+        itineraryAddForm.style.display = itineraryAddForm.style.display === 'none' ? 'block' : 'none';
+      });
+    }
+    if (cancelActivityBtn) {
+      cancelActivityBtn.addEventListener('click', function() {
+        if (itineraryAddForm) itineraryAddForm.style.display = 'none';
+      });
+    }
+
+    // Save activity
+    var saveActivityBtn = $('#saveActivityBtn');
+    if (saveActivityBtn) {
+      saveActivityBtn.addEventListener('click', function() {
+        var title = $('#activityTitle') ? $('#activityTitle').value.trim() : '';
+        if (!title) { showToast('Please enter an activity name', 'warning'); return; }
+        addItineraryItem({
+          title: title,
+          startTime: $('#activityTime') ? $('#activityTime').value : '',
+          type: $('#activityCategory') ? $('#activityCategory').value : 'activity',
+          location: $('#activityLocation') ? $('#activityLocation').value.trim() : '',
+          notes: $('#activityNotes') ? $('#activityNotes').value.trim() : ''
+        });
+        // Clear form
+        if ($('#activityTitle')) $('#activityTitle').value = '';
+        if ($('#activityTime')) $('#activityTime').value = '';
+        if ($('#activityLocation')) $('#activityLocation').value = '';
+        if ($('#activityNotes')) $('#activityNotes').value = '';
+        if (itineraryAddForm) itineraryAddForm.style.display = 'none';
+      });
+    }
+
+    // Add hotel form toggle
+    var addHotelBtn = $('#addHotelBtn');
+    var hotelAddForm = $('#hotelAddForm');
+    var cancelHotelBtn = $('#cancelHotelBtn');
+    if (addHotelBtn && hotelAddForm) {
+      addHotelBtn.addEventListener('click', function() {
+        hotelAddForm.style.display = hotelAddForm.style.display === 'none' ? 'block' : 'none';
+      });
+    }
+    if (cancelHotelBtn) {
+      cancelHotelBtn.addEventListener('click', function() {
+        if (hotelAddForm) hotelAddForm.style.display = 'none';
+      });
+    }
+
+    // Save hotel
+    var saveHotelBtn = $('#saveHotelBtn');
+    if (saveHotelBtn) {
+      saveHotelBtn.addEventListener('click', function() {
+        var name = $('#hotelName') ? $('#hotelName').value.trim() : '';
+        if (!name) { showToast('Please enter a hotel name', 'warning'); return; }
+        var idx = TripPlanner.currentTripIndex;
+        var accommodations = getTripSubData(idx, 'accommodation');
+        accommodations.push({
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+          name: name,
+          checkIn: $('#hotelCheckIn') ? $('#hotelCheckIn').value : '',
+          checkOut: $('#hotelCheckOut') ? $('#hotelCheckOut').value : '',
+          costPerNight: $('#hotelCostPerNight') ? parseFloat($('#hotelCostPerNight').value) || 0 : 0
+        });
+        setTripSubData(idx, 'accommodation', accommodations);
+        // Clear form
+        if ($('#hotelName')) $('#hotelName').value = '';
+        if ($('#hotelCheckIn')) $('#hotelCheckIn').value = '';
+        if ($('#hotelCheckOut')) $('#hotelCheckOut').value = '';
+        if ($('#hotelCostPerNight')) $('#hotelCostPerNight').value = '';
+        if (hotelAddForm) hotelAddForm.style.display = 'none';
+        renderAccommodationBar();
+        showToast('Accommodation added!', 'success');
+      });
+    }
+
+    // Add expense form toggle
+    var addExpenseBtn = $('#addExpenseBtn');
+    var expenseAddForm = $('#expenseAddForm');
+    var cancelExpenseBtn = $('#cancelExpenseBtn');
+    if (addExpenseBtn && expenseAddForm) {
+      addExpenseBtn.addEventListener('click', function() {
+        expenseAddForm.style.display = expenseAddForm.style.display === 'none' ? 'block' : 'none';
+        // Set default date
+        if ($('#expenseDate') && !$('#expenseDate').value) {
+          $('#expenseDate').value = new Date().toISOString().slice(0, 10);
+        }
+      });
+    }
+    if (cancelExpenseBtn) {
+      cancelExpenseBtn.addEventListener('click', function() {
+        if (expenseAddForm) expenseAddForm.style.display = 'none';
+      });
+    }
+
+    // Save expense with currency conversion
+    var saveExpenseBtn = $('#saveExpenseBtn');
+    if (saveExpenseBtn) {
+      saveExpenseBtn.addEventListener('click', async function() {
+        var amount = $('#expenseAmount') ? parseFloat($('#expenseAmount').value) : 0;
+        if (!amount || amount <= 0) { showToast('Please enter an amount', 'warning'); return; }
+        var currency = $('#expenseCurrency') ? $('#expenseCurrency').value : State.currency;
+        var homeCurrencyAmount = amount;
+        if (currency !== State.currency) {
+          homeCurrencyAmount = await convertCurrency(amount, currency, State.currency);
+        }
+        addExpense({
+          amount: amount,
+          currency: currency,
+          homeCurrencyAmount: homeCurrencyAmount,
+          category: $('#expenseCategory') ? $('#expenseCategory').value : 'other',
+          description: $('#expenseDescription') ? $('#expenseDescription').value.trim() : '',
+          date: $('#expenseDate') ? $('#expenseDate').value : new Date().toISOString().slice(0, 10)
+        });
+        // Clear form
+        if ($('#expenseAmount')) $('#expenseAmount').value = '';
+        if ($('#expenseDescription')) $('#expenseDescription').value = '';
+        if ($('#expenseConversionPreview')) $('#expenseConversionPreview').textContent = '';
+        if (expenseAddForm) expenseAddForm.style.display = 'none';
+      });
+    }
+
+    // Expense conversion preview
+    var expenseAmountInput = $('#expenseAmount');
+    var expenseCurrencySelect = $('#expenseCurrency');
+    function updateConversionPreview() {
+      var amount = expenseAmountInput ? parseFloat(expenseAmountInput.value) : 0;
+      var currency = expenseCurrencySelect ? expenseCurrencySelect.value : State.currency;
+      var previewEl = $('#expenseConversionPreview');
+      if (!previewEl || !amount || currency === State.currency) {
+        if (previewEl) previewEl.textContent = '';
+        return;
+      }
+      convertCurrency(amount, currency, State.currency).then(function(converted) {
+        if (previewEl) {
+          var sym = CURRENCY_SYMBOLS[currency] || currency;
+          previewEl.textContent = sym + amount + ' \u2248 ' + formatPrice(converted);
+        }
+      });
+    }
+    if (expenseAmountInput) expenseAmountInput.addEventListener('input', updateConversionPreview);
+    if (expenseCurrencySelect) expenseCurrencySelect.addEventListener('change', updateConversionPreview);
+
+    // Currency converter
+    var converterAmountInput = $('#converterAmount');
+    var converterFromSelect = $('#converterFrom');
+    var converterToSelect = $('#converterTo');
+    function doConversion() {
+      var amount = converterAmountInput ? parseFloat(converterAmountInput.value) : 0;
+      var from = converterFromSelect ? converterFromSelect.value : 'USD';
+      var to = converterToSelect ? converterToSelect.value : 'GBP';
+      var resultEl = $('#converterResult');
+      if (!amount || !resultEl) { if (resultEl) resultEl.textContent = ''; return; }
+      convertCurrency(amount, from, to).then(function(converted) {
+        var fromSym = CURRENCY_SYMBOLS[from] || from;
+        var toSym = CURRENCY_SYMBOLS[to] || to;
+        if (resultEl) resultEl.textContent = fromSym + amount + ' = ' + toSym + converted.toFixed(2);
+      });
+    }
+    if (converterAmountInput) converterAmountInput.addEventListener('input', doConversion);
+    if (converterFromSelect) converterFromSelect.addEventListener('change', doConversion);
+    if (converterToSelect) converterToSelect.addEventListener('change', doConversion);
+
+    // Add packing item
+    var addPackingBtn = $('#addPackingItemBtn');
+    var packingInput = $('#packingCustomItem');
+    if (addPackingBtn && packingInput) {
+      addPackingBtn.addEventListener('click', function() {
+        addCustomPackingItem(packingInput.value);
+        packingInput.value = '';
+      });
+      packingInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          addCustomPackingItem(packingInput.value);
+          packingInput.value = '';
+        }
+      });
+    }
+
+    // Add document form toggle
+    var addDocBtn = $('#addDocBtn');
+    var docAddForm = $('#docAddForm');
+    var cancelDocBtn = $('#cancelDocBtn');
+    if (addDocBtn && docAddForm) {
+      addDocBtn.addEventListener('click', function() {
+        docAddForm.style.display = docAddForm.style.display === 'none' ? 'block' : 'none';
+      });
+    }
+    if (cancelDocBtn) {
+      cancelDocBtn.addEventListener('click', function() {
+        if (docAddForm) docAddForm.style.display = 'none';
+      });
+    }
+
+    // Save document
+    var saveDocBtn = $('#saveDocBtn');
+    if (saveDocBtn) {
+      saveDocBtn.addEventListener('click', function() {
+        var title = $('#docTitle') ? $('#docTitle').value.trim() : '';
+        if (!title) { showToast('Please enter a document title', 'warning'); return; }
+        addDocument({
+          type: $('#docType') ? $('#docType').value : 'other',
+          title: title,
+          reference: $('#docReference') ? $('#docReference').value.trim() : '',
+          notes: $('#docNotes') ? $('#docNotes').value.trim() : ''
+        });
+        // Clear form
+        if ($('#docTitle')) $('#docTitle').value = '';
+        if ($('#docReference')) $('#docReference').value = '';
+        if ($('#docNotes')) $('#docNotes').value = '';
+        if (docAddForm) docAddForm.style.display = 'none';
+      });
     }
   }
 

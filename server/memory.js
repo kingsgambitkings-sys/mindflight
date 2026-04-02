@@ -85,6 +85,13 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_flight_prices_origin_dest ON flight_prices(origin, destination);
   CREATE INDEX IF NOT EXISTS idx_flight_prices_checked_at ON flight_prices(checked_at);
+
+  CREATE TABLE IF NOT EXISTS api_cache (
+    key TEXT PRIMARY KEY,
+    data TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
 `);
 
 const stmts = {
@@ -224,6 +231,11 @@ const stmts = {
   // Recent searches
   insertRecentSearch: db.prepare('INSERT INTO recent_searches (origin, destination, date, cheapest_price, currency) VALUES (?, ?, ?, ?, ?)'),
   getRecentSearches: db.prepare('SELECT * FROM recent_searches ORDER BY searched_at DESC LIMIT 20'),
+
+  // API cache
+  getCache: db.prepare(`SELECT data FROM api_cache WHERE key = ? AND expires_at > datetime('now')`),
+  setCache: db.prepare(`INSERT INTO api_cache (key, data, expires_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET data = excluded.data, expires_at = excluded.expires_at, created_at = datetime('now')`),
+  clearExpiredCache: db.prepare(`DELETE FROM api_cache WHERE expires_at <= datetime('now')`),
 };
 
 export const memoryStore = {
@@ -376,5 +388,18 @@ export const memoryStore = {
   },
   getRecentSearches() {
     return stmts.getRecentSearches.all();
+  },
+
+  // === API Cache ===
+  getCache(key) {
+    const row = stmts.getCache.get(key);
+    return row ? JSON.parse(row.data) : null;
+  },
+  setCache(key, data, ttlHours) {
+    const expiresAt = new Date(Date.now() + ttlHours * 60 * 60 * 1000).toISOString().replace('T', ' ').replace('Z', '');
+    stmts.setCache.run(key, JSON.stringify(data), expiresAt);
+  },
+  clearExpiredCache() {
+    return stmts.clearExpiredCache.run();
   },
 };

@@ -26,7 +26,8 @@ const DATA_CACHE = {};
 const dataFiles = [
   'city-costs.json', 'visa-requirements.json', 'destination-facts.json',
   'airline-ratings.json', 'baggage-policies.json', 'airport-info.json',
-  'holidays.json', 'seasonal-guide.json', 'airport-timezones.json'
+  'holidays.json', 'seasonal-guide.json', 'airport-timezones.json',
+  'departure-checklist.json', 'packing-templates.json'
 ];
 for (const file of dataFiles) {
   try {
@@ -634,6 +635,167 @@ app.get('/api/co2', (req, res) => {
     const result = calculateCO2(origin, destination, cabin || 'economy');
     if (!result) return res.status(404).json({ error: 'Airport code not found' });
     res.json({ origin: origin.toUpperCase(), destination: destination.toUpperCase(), cabin: (cabin || 'economy').toLowerCase(), ...result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== Departure Checklist (uses cached data) =====
+app.get('/api/departure-checklist', (req, res) => {
+  try {
+    const data = DATA_CACHE['departure-checklist.json'];
+    if (!data) return res.status(404).json({ error: 'Departure checklist data not available' });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== Packing Templates (uses cached data) =====
+app.get('/api/packing-templates', (req, res) => {
+  try {
+    const data = DATA_CACHE['packing-templates.json'];
+    if (!data) return res.status(404).json({ error: 'Packing templates data not available' });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== Geocode Proxy (Nominatim, cached 7 days) =====
+app.get('/api/geocode', async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q) return res.status(400).json({ error: 'Missing query parameter q' });
+
+    const cacheKey = `geocode:${q.toLowerCase().trim()}`;
+    const cached = memoryStore.getCache(cacheKey);
+    if (cached) return res.json(cached);
+
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5`;
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'MindFlight/2.0 (travel app)' }
+    });
+    if (!response.ok) return res.status(502).json({ error: 'Nominatim request failed' });
+
+    const raw = await response.json();
+    const results = raw.map(item => ({
+      name: item.display_name,
+      lat: parseFloat(item.lat),
+      lon: parseFloat(item.lon),
+      type: item.type,
+      address: item.display_name
+    }));
+
+    memoryStore.setCache(cacheKey, results, 168); // 7 days
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== Exchange Rates Proxy (Frankfurter, cached 24 hours) =====
+app.get('/api/exchange-rates', async (req, res) => {
+  try {
+    const { base } = req.query;
+    if (!base) return res.status(400).json({ error: 'Missing base currency parameter' });
+
+    const baseCurrency = base.toUpperCase();
+    const cacheKey = `exchange-rates:${baseCurrency}`;
+    const cached = memoryStore.getCache(cacheKey);
+    if (cached) return res.json(cached);
+
+    const url = `https://api.frankfurter.dev/v1/latest?base=${encodeURIComponent(baseCurrency)}`;
+    const response = await fetch(url);
+    if (!response.ok) return res.status(502).json({ error: 'Frankfurter request failed' });
+
+    const raw = await response.json();
+    const result = {
+      base: raw.base,
+      date: raw.date,
+      rates: raw.rates
+    };
+
+    memoryStore.setCache(cacheKey, result, 24); // 24 hours
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== Route Directions Proxy (OSRM, cached 7 days) =====
+app.get('/api/route-directions', async (req, res) => {
+  try {
+    const { from, to } = req.query;
+    if (!from || !to) return res.status(400).json({ error: 'Missing from or to parameter' });
+
+    const [fromLat, fromLon] = from.split(',').map(Number);
+    const [toLat, toLon] = to.split(',').map(Number);
+    if ([fromLat, fromLon, toLat, toLon].some(isNaN)) {
+      return res.status(400).json({ error: 'Invalid coordinates. Use format: lat,lon' });
+    }
+
+    const cacheKey = `route-directions:${fromLat},${fromLon}:${toLat},${toLon}`;
+    const cached = memoryStore.getCache(cacheKey);
+    if (cached) return res.json(cached);
+
+    const url = `https://router.project-osrm.org/route/v1/driving/${fromLon},${fromLat};${toLon},${toLat}?overview=false`;
+    const response = await fetch(url);
+    if (!response.ok) return res.status(502).json({ error: 'OSRM request failed' });
+
+    const raw = await response.json();
+    if (!raw.routes || !raw.routes.length) {
+      return res.status(404).json({ error: 'No route found' });
+    }
+
+    const route = raw.routes[0];
+    const result = {
+      distance_km: Math.round(route.distance / 1000 * 100) / 100,
+      duration_min: Math.round(route.duration / 60 * 100) / 100
+    };
+
+    memoryStore.setCache(cacheKey, result, 168); // 7 days
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== Place Details Proxy (Overpass API, cached 24 hours) =====
+app.get('/api/place-details', async (req, res) => {
+  try {
+    const { lat, lon } = req.query;
+    if (!lat || !lon) return res.status(400).json({ error: 'Missing lat or lon parameter' });
+
+    const latitude = parseFloat(lat);
+    const longitude = parseFloat(lon);
+    if (isNaN(latitude) || isNaN(longitude)) {
+      return res.status(400).json({ error: 'Invalid lat/lon values' });
+    }
+
+    const cacheKey = `place-details:${latitude.toFixed(4)},${longitude.toFixed(4)}`;
+    const cached = memoryStore.getCache(cacheKey);
+    if (cached) return res.json(cached);
+
+    const query = `[out:json];node(around:500,${latitude},${longitude})[tourism];out;`;
+    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'MindFlight/2.0 (travel app)' }
+    });
+    if (!response.ok) return res.status(502).json({ error: 'Overpass API request failed' });
+
+    const raw = await response.json();
+    const results = (raw.elements || [])
+      .filter(el => el.tags && el.tags.name)
+      .map(el => ({
+        name: el.tags.name,
+        type: el.tags.tourism || 'unknown',
+        lat: el.lat,
+        lon: el.lon
+      }));
+
+    memoryStore.setCache(cacheKey, results, 24); // 24 hours
+    res.json(results);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

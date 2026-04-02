@@ -1,0 +1,12 @@
+{
+  "essentials": ["Passport", "Phone + charger", "Wallet", "Travel insurance docs", "Medications", "Headphones", "Power bank"],
+  "clothes_warm": ["Winter jacket", "Sweaters", "Thermal layers", "Warm socks", "Gloves", "Scarf", "Beanie"],
+  "clothes_tropical": ["Shorts", "T-shirts", "Swimwear", "Flip flops", "Sunglasses", "Sun hat", "Light dress/shirt"],
+  "clothes_mild": ["Light jacket", "Jeans", "Casual shirts", "Walking shoes", "Light sweater"],
+  "rain_gear": ["Umbrella", "Rain jacket", "Waterproof shoes"],
+  "toiletries": ["Toothbrush + paste", "Deodorant", "Shampoo", "Sunscreen", "Lip balm", "Hand sanitizer"],
+  "tech": ["Laptop + charger", "Camera", "Power adapter", "Portable WiFi/eSIM"],
+  "beach": ["Beach towel", "Snorkel gear", "Reef-safe sunscreen", "Waterproof phone case"],
+  "hiking": ["Hiking boots", "Backpack", "Water bottle", "First aid kit", "Trail snacks"],
+  "business": ["Suit/blazer", "Dress shoes", "Tie/scarf", "Business cards", "Laptop bag"]
+}

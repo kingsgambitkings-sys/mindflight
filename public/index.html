@@ -521,6 +521,285 @@
               <button class="btn-primary btn-sm" style="margin-top:12px;" onclick="document.getElementById('tripModal').classList.add('open');">Create your first trip</button>
             </div>
           </div>
+
+          <!-- ===== TRIP DETAIL VIEW (expanded trip planner) ===== -->
+          <div class="trip-detail-view" id="tripDetailView" style="display:none;">
+            <!-- Trip Header -->
+            <div class="trip-detail-header">
+              <button class="trip-back-btn" id="tripBackBtn" aria-label="Back to trip list">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                <span>Back</span>
+              </button>
+              <div class="trip-detail-info">
+                <h2 class="trip-detail-name" id="tripDetailName"></h2>
+                <span class="trip-detail-dates" id="tripDetailDates"></span>
+                <span class="trip-detail-countdown" id="tripDetailCountdown"></span>
+              </div>
+            </div>
+
+            <!-- Sub-tabs: Itinerary | Budget | Map | Checklist | Notes -->
+            <div class="trip-subtabs" role="tablist" aria-label="Trip planning tabs">
+              <button class="trip-subtab active" role="tab" aria-selected="true" aria-controls="tripTabItinerary" id="tabBtnItinerary" data-tab="itinerary">Itinerary</button>
+              <button class="trip-subtab" role="tab" aria-selected="false" aria-controls="tripTabBudget" id="tabBtnBudget" data-tab="budget">Budget</button>
+              <button class="trip-subtab" role="tab" aria-selected="false" aria-controls="tripTabMap" id="tabBtnMap" data-tab="map">Map</button>
+              <button class="trip-subtab" role="tab" aria-selected="false" aria-controls="tripTabChecklist" id="tabBtnChecklist" data-tab="checklist">Checklist</button>
+              <button class="trip-subtab" role="tab" aria-selected="false" aria-controls="tripTabNotes" id="tabBtnNotes" data-tab="notes">Notes</button>
+            </div>
+
+            <!-- TAB PANELS -->
+
+            <!-- Itinerary Tab -->
+            <div class="trip-tab-panel active" id="tripTabItinerary" role="tabpanel" aria-labelledby="tabBtnItinerary">
+              <!-- Day tabs -->
+              <div class="day-tabs-wrap">
+                <div class="day-tabs" id="dayTabs" role="tablist" aria-label="Trip days"></div>
+              </div>
+              <!-- Accommodation bar -->
+              <div class="accommodation-bar" id="accommodationBar"></div>
+              <!-- Weather for day -->
+              <div class="day-weather" id="dayWeather"></div>
+              <!-- Itinerary list -->
+              <div class="itinerary-list" id="itineraryList"></div>
+              <!-- Add activity button -->
+              <button class="btn-primary itinerary-add-btn" id="addActivityBtn" aria-label="Add activity">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add Activity
+              </button>
+              <!-- Add activity inline form -->
+              <div class="itinerary-add-form" id="itineraryAddForm" style="display:none;">
+                <div class="form-group">
+                  <label for="activityTitle">Activity Name</label>
+                  <input type="text" id="activityTitle" placeholder="e.g. Visit Senso-ji Temple" aria-label="Activity name">
+                </div>
+                <div class="itinerary-form-row">
+                  <div class="form-group form-group-sm">
+                    <label for="activityTime">Time</label>
+                    <input type="time" id="activityTime" aria-label="Activity time">
+                  </div>
+                  <div class="form-group form-group-sm">
+                    <label for="activityCategory">Category</label>
+                    <select id="activityCategory" aria-label="Activity category">
+                      <option value="sightseeing">Sightseeing</option>
+                      <option value="meal">Food &amp; Dining</option>
+                      <option value="transport">Transport</option>
+                      <option value="activity">Activity</option>
+                      <option value="accommodation">Accommodation</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="activityLocation">Location</label>
+                  <input type="text" id="activityLocation" placeholder="e.g. Asakusa, Tokyo" aria-label="Activity location">
+                </div>
+                <div class="form-group">
+                  <label for="activityNotes">Notes</label>
+                  <input type="text" id="activityNotes" placeholder="Optional notes..." aria-label="Activity notes">
+                </div>
+                <div class="itinerary-form-actions">
+                  <button class="btn-primary btn-sm" id="saveActivityBtn" aria-label="Save activity">Save</button>
+                  <button class="btn-text btn-sm" id="cancelActivityBtn" aria-label="Cancel adding activity">Cancel</button>
+                </div>
+              </div>
+              <!-- Add accommodation form -->
+              <button class="btn-outline btn-sm itinerary-hotel-btn" id="addHotelBtn" aria-label="Add accommodation">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7v14M21 7v14M6 11h4v6H6zM14 11h4v6h-4z"/></svg>
+                Add Hotel/Stay
+              </button>
+              <div class="hotel-add-form" id="hotelAddForm" style="display:none;">
+                <div class="form-group">
+                  <label for="hotelName">Hotel / Stay Name</label>
+                  <input type="text" id="hotelName" placeholder="e.g. Park Hyatt Tokyo" aria-label="Hotel name">
+                </div>
+                <div class="itinerary-form-row">
+                  <div class="form-group form-group-sm">
+                    <label for="hotelCheckIn">Check-in</label>
+                    <input type="date" id="hotelCheckIn" aria-label="Check-in date">
+                  </div>
+                  <div class="form-group form-group-sm">
+                    <label for="hotelCheckOut">Check-out</label>
+                    <input type="date" id="hotelCheckOut" aria-label="Check-out date">
+                  </div>
+                  <div class="form-group form-group-sm">
+                    <label for="hotelCostPerNight">Cost/night</label>
+                    <input type="number" id="hotelCostPerNight" placeholder="0" min="0" aria-label="Cost per night">
+                  </div>
+                </div>
+                <div class="itinerary-form-actions">
+                  <button class="btn-primary btn-sm" id="saveHotelBtn" aria-label="Save accommodation">Save</button>
+                  <button class="btn-text btn-sm" id="cancelHotelBtn" aria-label="Cancel adding accommodation">Cancel</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Budget Tab -->
+            <div class="trip-tab-panel" id="tripTabBudget" role="tabpanel" aria-labelledby="tabBtnBudget">
+              <div class="expense-summary" id="expenseSummary"></div>
+              <div class="expense-chart-wrap" id="expenseChartWrap"></div>
+              <button class="btn-primary btn-sm" id="addExpenseBtn" aria-label="Add expense">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add Expense
+              </button>
+              <div class="expense-add-form" id="expenseAddForm" style="display:none;">
+                <div class="itinerary-form-row">
+                  <div class="form-group form-group-sm">
+                    <label for="expenseAmount">Amount</label>
+                    <input type="number" id="expenseAmount" placeholder="0" min="0" step="0.01" aria-label="Expense amount">
+                  </div>
+                  <div class="form-group form-group-sm">
+                    <label for="expenseCurrency">Currency</label>
+                    <select id="expenseCurrency" aria-label="Expense currency">
+                      <option value="GBP">GBP</option>
+                      <option value="USD">USD</option>
+                      <option value="EUR">EUR</option>
+                      <option value="JPY">JPY</option>
+                      <option value="HKD">HKD</option>
+                      <option value="SGD">SGD</option>
+                      <option value="THB">THB</option>
+                      <option value="AUD">AUD</option>
+                      <option value="CNY">CNY</option>
+                      <option value="KRW">KRW</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="expense-conversion-preview" id="expenseConversionPreview"></div>
+                <div class="itinerary-form-row">
+                  <div class="form-group form-group-sm">
+                    <label for="expenseCategory">Category</label>
+                    <select id="expenseCategory" aria-label="Expense category">
+                      <option value="food">Food</option>
+                      <option value="transport">Transport</option>
+                      <option value="accommodation">Accommodation</option>
+                      <option value="activities">Activities</option>
+                      <option value="shopping">Shopping</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div class="form-group form-group-sm">
+                    <label for="expenseDate">Date</label>
+                    <input type="date" id="expenseDate" aria-label="Expense date">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="expenseDescription">Description</label>
+                  <input type="text" id="expenseDescription" placeholder="e.g. Ramen lunch at Ichiran" aria-label="Expense description">
+                </div>
+                <div class="itinerary-form-actions">
+                  <button class="btn-primary btn-sm" id="saveExpenseBtn" aria-label="Save expense">Save</button>
+                  <button class="btn-text btn-sm" id="cancelExpenseBtn" aria-label="Cancel adding expense">Cancel</button>
+                </div>
+              </div>
+              <div class="expense-list" id="expenseList"></div>
+              <!-- Currency converter -->
+              <div class="currency-converter" id="currencyConverter">
+                <h4 class="converter-title">Quick Currency Converter</h4>
+                <div class="converter-row">
+                  <input type="number" id="converterAmount" placeholder="100" min="0" step="0.01" aria-label="Amount to convert">
+                  <select id="converterFrom" aria-label="Convert from currency">
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                    <option value="JPY">JPY</option>
+                    <option value="HKD">HKD</option>
+                    <option value="SGD">SGD</option>
+                    <option value="THB">THB</option>
+                    <option value="AUD">AUD</option>
+                    <option value="CNY">CNY</option>
+                    <option value="KRW">KRW</option>
+                  </select>
+                  <span class="converter-arrow">&#8594;</span>
+                  <select id="converterTo" aria-label="Convert to currency">
+                    <option value="GBP">GBP</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="JPY">JPY</option>
+                    <option value="HKD">HKD</option>
+                    <option value="SGD">SGD</option>
+                    <option value="THB">THB</option>
+                    <option value="AUD">AUD</option>
+                    <option value="CNY">CNY</option>
+                    <option value="KRW">KRW</option>
+                  </select>
+                </div>
+                <div class="converter-result" id="converterResult"></div>
+              </div>
+            </div>
+
+            <!-- Map Tab -->
+            <div class="trip-tab-panel" id="tripTabMap" role="tabpanel" aria-labelledby="tabBtnMap">
+              <div class="trip-map-container">
+                <div id="tripMap" class="trip-map"></div>
+              </div>
+              <div class="map-legend" id="mapLegend"></div>
+            </div>
+
+            <!-- Checklist Tab -->
+            <div class="trip-tab-panel" id="tripTabChecklist" role="tabpanel" aria-labelledby="tabBtnChecklist">
+              <!-- Departure Checklist -->
+              <div class="checklist-section" id="departureChecklist">
+                <h3 class="checklist-title">Departure Checklist</h3>
+                <div class="checklist-progress" id="checklistProgress"></div>
+                <div class="checklist-items" id="checklistItems"></div>
+              </div>
+              <!-- Packing List -->
+              <div class="checklist-section" id="packingList">
+                <h3 class="checklist-title">Packing List</h3>
+                <div class="checklist-progress" id="packingProgress"></div>
+                <div class="packing-items" id="packingItems"></div>
+                <div class="packing-add-row">
+                  <input type="text" id="packingCustomItem" placeholder="Add custom item..." aria-label="Add custom packing item">
+                  <button class="btn-primary btn-sm" id="addPackingItemBtn" aria-label="Add packing item">Add</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Notes Tab -->
+            <div class="trip-tab-panel" id="tripTabNotes" role="tabpanel" aria-labelledby="tabBtnNotes">
+              <div class="notes-section">
+                <h3 class="notes-title">Trip Notes</h3>
+                <textarea class="trip-notes-textarea" id="tripNotesArea" placeholder="Write your trip notes here..." aria-label="Trip notes"></textarea>
+              </div>
+              <div class="notes-section">
+                <h3 class="notes-title">Document Vault</h3>
+                <div class="doc-vault" id="docVault"></div>
+                <button class="btn-outline btn-sm" id="addDocBtn" aria-label="Add document">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Add Document
+                </button>
+                <div class="doc-add-form" id="docAddForm" style="display:none;">
+                  <div class="itinerary-form-row">
+                    <div class="form-group form-group-sm">
+                      <label for="docType">Type</label>
+                      <select id="docType" aria-label="Document type">
+                        <option value="booking">Booking</option>
+                        <option value="passport">Passport</option>
+                        <option value="visa">Visa</option>
+                        <option value="insurance">Insurance</option>
+                        <option value="emergency">Emergency Contact</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div class="form-group form-group-sm">
+                      <label for="docTitle">Title</label>
+                      <input type="text" id="docTitle" placeholder="e.g. Flight BA283" aria-label="Document title">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="docReference">Reference Number</label>
+                    <input type="text" id="docReference" placeholder="e.g. XHGT72" aria-label="Reference number">
+                  </div>
+                  <div class="form-group">
+                    <label for="docNotes">Notes</label>
+                    <input type="text" id="docNotes" placeholder="Optional notes..." aria-label="Document notes">
+                  </div>
+                  <div class="itinerary-form-actions">
+                    <button class="btn-primary btn-sm" id="saveDocBtn" aria-label="Save document">Save</button>
+                    <button class="btn-text btn-sm" id="cancelDocBtn" aria-label="Cancel adding document">Cancel</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
 
         <!-- SECTION 9: Footer -->
@@ -752,6 +1031,8 @@
   <!-- ===== TOAST ===== -->
   <div class="toast-container" id="toastContainer" aria-live="polite" role="status"></div>
 
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/globe.gl"></script>
   <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
   <script src="airports.js"></script>
